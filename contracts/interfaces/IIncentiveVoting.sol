@@ -12,10 +12,7 @@ interface IIncentiveVoting is ISystemStart, IDelegatedOps {
     }
 
     event AccountWeightRegistered(
-        address indexed account,
-        uint256 indexed week,
-        uint256 frozenBalance,
-        ITokenLocker.LockData[] registeredLockData
+        address indexed account, uint256 indexed week, uint256 frozenBalance, ITokenLocker.LockData[] registeredLockData
     );
     event ClearedVotes(address indexed account, uint256 indexed week);
     event NewVotes(address indexed account, uint256 indexed week, Vote[] newVotes, uint256 totalPointsUsed);
@@ -46,9 +43,10 @@ interface IIncentiveVoting is ISystemStart, IDelegatedOps {
 
     function getAccountCurrentVotes(address account) external view returns (Vote[] memory votes);
 
-    function getAccountRegisteredLocks(
-        address account
-    ) external view returns (uint256 frozenWeight, ITokenLocker.LockData[] memory lockData);
+    function getAccountRegisteredLocks(address account)
+        external
+        view
+        returns (uint256 frozenWeight, ITokenLocker.LockData[] memory lockData);
 
     function getReceiverWeight(uint256 idx) external view returns (uint256);
 

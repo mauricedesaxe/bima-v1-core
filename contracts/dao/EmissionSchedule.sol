@@ -6,11 +6,11 @@ import {BabelOwnable} from "../dependencies/BabelOwnable.sol";
 import {SystemStart} from "../dependencies/SystemStart.sol";
 
 /**
-    @title Babel Emission Schedule
-    @notice Calculates weekly BABEL emissions. The weekly amount is determined
-            as a percentage of the remaining unallocated supply. Over time the
-            reward rate will decay to dust as it approaches the maximum supply,
-            but should not reach zero for a Very Long Time.
+ * @title Babel Emission Schedule
+ *     @notice Calculates weekly BABEL emissions. The weekly amount is determined
+ *             as a percentage of the remaining unallocated supply. Over time the
+ *             reward rate will decay to dust as it approaches the maximum supply,
+ *             but should not reach zero for a Very Long Time.
  */
 contract EmissionSchedule is IEmissionSchedule, BabelOwnable, SystemStart {
     // number representing 100% in `weeklyPct`
@@ -56,10 +56,10 @@ contract EmissionSchedule is IEmissionSchedule, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Set a schedule for future updates to `weeklyPct`
-        @dev The given schedule replaces any existing one
-        @param _schedule Dynamic array of (week, weeklyPct) ordered by week descending.
-                         Each `week` indicates the number of weeks after the current week.
+     * @notice Set a schedule for future updates to `weeklyPct`
+     *     @dev The given schedule replaces any existing one
+     *     @param _schedule Dynamic array of (week, weeklyPct) ordered by week descending.
+     *                      Each `week` indicates the number of weeks after the current week.
      */
     function setWeeklyPctSchedule(uint64[2][] memory _schedule) external onlyOwner returns (bool) {
         _setWeeklyPctSchedule(_schedule);
@@ -67,7 +67,7 @@ contract EmissionSchedule is IEmissionSchedule, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Set the number of lock weeks and rate at which lock weeks decay
+     * @notice Set the number of lock weeks and rate at which lock weeks decay
      */
     function setLockParameters(uint64 _lockWeeks, uint64 _lockDecayWeeks) external onlyOwner returns (bool) {
         require(_lockWeeks <= MAX_LOCK_WEEKS, "Cannot exceed MAX_LOCK_WEEKS");
@@ -79,20 +79,19 @@ contract EmissionSchedule is IEmissionSchedule, BabelOwnable, SystemStart {
         return true;
     }
 
-    function getReceiverWeeklyEmissions(
-        uint256 id,
-        uint256 week,
-        uint256 totalWeeklyEmissions
-    ) external returns (uint256) {
+    function getReceiverWeeklyEmissions(uint256 id, uint256 week, uint256 totalWeeklyEmissions)
+        external
+        returns (uint256)
+    {
         uint256 pct = voter.getReceiverVotePct(id, week);
 
         return (totalWeeklyEmissions * pct) / 1e18;
     }
 
-    function getTotalWeeklyEmissions(
-        uint256 week,
-        uint256 unallocatedTotal
-    ) external returns (uint256 amount, uint256 lock) {
+    function getTotalWeeklyEmissions(uint256 week, uint256 unallocatedTotal)
+        external
+        returns (uint256 amount, uint256 lock)
+    {
         require(msg.sender == address(vault));
 
         // apply the lock week decay

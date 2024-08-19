@@ -93,7 +93,6 @@ contract TestSetup is Test {
     uint256 internal constant INIT_LOCK_TO_TOKEN_RATIO = 1e18;
     address internal constant ZERO_ADDRESS = address(0);
 
-
     function setUp() public virtual {
         // set addresses used by tests
         users.owner = address(0x1111);
@@ -123,20 +122,22 @@ contract TestSetup is Test {
         // Core
         babelCore = new BabelCore(users.owner, users.guardian, addresses.priceFeed, addresses.feeReceiver);
         assertEq(addresses.core, address(babelCore));
-        
+
         // PriceFeed
         priceFeed = new PriceFeed(addresses.core, address(mockOracle));
         assertEq(addresses.priceFeed, address(priceFeed));
-        priceFeed.setOracle(address(stakedBTC),
-                            address(mockOracle),
-                            80000, // heartbeat,
-                            bytes4(0x00000000), // Read pure data assume stBTC is 1:1 with BTC :)
-                            18, // sharePriceDecimals
-                            false //_isEthIndexed
-                            );
+        priceFeed.setOracle(
+            address(stakedBTC),
+            address(mockOracle),
+            80000, // heartbeat,
+            bytes4(0x00000000), // Read pure data assume stBTC is 1:1 with BTC :)
+            18, // sharePriceDecimals
+            false //_isEthIndexed
+        );
 
         // FeeReceiver
-        feeReceiver = new FeeReceiver(addresses.core); ++addresses.nonce;
+        feeReceiver = new FeeReceiver(addresses.core);
+        ++addresses.nonce;
         assertEq(addresses.feeReceiver, address(feeReceiver));
 
         // InterimAdmin
@@ -159,92 +160,105 @@ contract TestSetup is Test {
         addresses.babelVault = vm.computeCreateAddress(users.owner, ++addresses.nonce);
 
         // Factory
-        factory = new Factory(addresses.core, 
-                              IDebtToken(addresses.debtToken),
-                              IStabilityPool(addresses.stabilityPool),
-                              IBorrowerOperations(addresses.borrowerOps),
-                              address(sortedTroves),
-                              addresses.troveMgr,
-                              ILiquidationManager(addresses.liquidationMgr));
+        factory = new Factory(
+            addresses.core,
+            IDebtToken(addresses.debtToken),
+            IStabilityPool(addresses.stabilityPool),
+            IBorrowerOperations(addresses.borrowerOps),
+            address(sortedTroves),
+            addresses.troveMgr,
+            ILiquidationManager(addresses.liquidationMgr)
+        );
         assertEq(addresses.factory, address(factory));
 
         // LiquidationManager
-        liquidationMgr = new LiquidationManager(IStabilityPool(addresses.stabilityPool),
-                                                IBorrowerOperations(addresses.borrowerOps),
-                                                addresses.factory,
-                                                INIT_GAS_COMPENSATION);
+        liquidationMgr = new LiquidationManager(
+            IStabilityPool(addresses.stabilityPool),
+            IBorrowerOperations(addresses.borrowerOps),
+            addresses.factory,
+            INIT_GAS_COMPENSATION
+        );
         assertEq(addresses.liquidationMgr, address(liquidationMgr));
 
         // DebtToken
-        debtToken = new DebtToken("BUSD", "BUSD",
-                                  addresses.stabilityPool,
-                                  addresses.borrowerOps,
-                                  babelCore,
-                                  ZERO_ADDRESS, // LayerZero endpoint
-                                  addresses.factory,
-                                  users.gasPool,
-                                  INIT_GAS_COMPENSATION);
+        debtToken = new DebtToken(
+            "BUSD",
+            "BUSD",
+            addresses.stabilityPool,
+            addresses.borrowerOps,
+            babelCore,
+            ZERO_ADDRESS, // LayerZero endpoint
+            addresses.factory,
+            users.gasPool,
+            INIT_GAS_COMPENSATION
+        );
         assertEq(addresses.debtToken, address(debtToken));
 
         // BorrowerOperations
-        borrowerOps = new BorrowerOperations(addresses.core,
-                                             addresses.debtToken,
-                                             addresses.factory,
-                                             INIT_MIN_NET_DEBT,
-                                             INIT_GAS_COMPENSATION);
+        borrowerOps = new BorrowerOperations(
+            addresses.core, addresses.debtToken, addresses.factory, INIT_MIN_NET_DEBT, INIT_GAS_COMPENSATION
+        );
         assertEq(addresses.borrowerOps, address(borrowerOps));
 
         // StabilityPool
-        stabilityPool = new StabilityPool(addresses.core,
-                                          IDebtToken(addresses.debtToken),
-                                          IBabelVault(addresses.babelVault),
-                                          addresses.factory,
-                                          addresses.liquidationMgr);
+        stabilityPool = new StabilityPool(
+            addresses.core,
+            IDebtToken(addresses.debtToken),
+            IBabelVault(addresses.babelVault),
+            addresses.factory,
+            addresses.liquidationMgr
+        );
         assertEq(addresses.stabilityPool, address(stabilityPool));
 
         // TroveManager
-        troveMgr = new TroveManager(addresses.core,
-                                    users.gasPool,
-                                    addresses.debtToken,
-                                    addresses.borrowerOps,
-                                    addresses.babelVault,
-                                    addresses.liquidationMgr,
-                                    INIT_GAS_COMPENSATION);
+        troveMgr = new TroveManager(
+            addresses.core,
+            users.gasPool,
+            addresses.debtToken,
+            addresses.borrowerOps,
+            addresses.babelVault,
+            addresses.liquidationMgr,
+            INIT_GAS_COMPENSATION
+        );
         assertEq(addresses.troveMgr, address(troveMgr));
 
         // TokenLocker
-        tokenLocker = new TokenLocker(addresses.core,
-                                      IBabelToken(addresses.babelToken),
-                                      IIncentiveVoting(addresses.incentiveVoting),
-                                      users.owner,
-                                      INIT_LOCK_TO_TOKEN_RATIO);
+        tokenLocker = new TokenLocker(
+            addresses.core,
+            IBabelToken(addresses.babelToken),
+            IIncentiveVoting(addresses.incentiveVoting),
+            users.owner,
+            INIT_LOCK_TO_TOKEN_RATIO
+        );
         assertEq(addresses.tokenLocker, address(tokenLocker));
 
         // IncentiveVoting
-        incentiveVoting = new IncentiveVoting(addresses.core,
-                                              ITokenLocker(addresses.tokenLocker),
-                                              addresses.babelVault);
+        incentiveVoting = new IncentiveVoting(addresses.core, ITokenLocker(addresses.tokenLocker), addresses.babelVault);
         assertEq(addresses.incentiveVoting, address(incentiveVoting));
 
         // BabelToken
-        babelToken = new BabelToken(addresses.babelVault,
-                                    ZERO_ADDRESS, // LayerZero endpoint
-                                    addresses.tokenLocker);
+        babelToken = new BabelToken(
+            addresses.babelVault,
+            ZERO_ADDRESS, // LayerZero endpoint
+            addresses.tokenLocker
+        );
         assertEq(addresses.babelToken, address(babelToken));
 
         // BabelVault
-        babelVault = new BabelVault(addresses.core,
-                                    IBabelToken(addresses.babelToken),
-                                    ITokenLocker(addresses.tokenLocker),
-                                    IIncentiveVoting(addresses.incentiveVoting),
-                                    addresses.stabilityPool,
-                                    users.owner);
+        babelVault = new BabelVault(
+            addresses.core,
+            IBabelToken(addresses.babelToken),
+            ITokenLocker(addresses.tokenLocker),
+            IIncentiveVoting(addresses.incentiveVoting),
+            addresses.stabilityPool,
+            users.owner
+        );
         assertEq(addresses.babelVault, address(babelVault));
 
         // use Factory to deploy new instances of `TroveManager` and `SortedTroves`
         // to add StakedBTC as valid collateral in the protocol
         IFactory.DeploymentParams memory params = IFactory.DeploymentParams({
-            minuteDecayFactor : 999037758833783000,
+            minuteDecayFactor: 999037758833783000,
             redemptionFeeFloor: 5e15,
             maxRedemptionFee: 1e18,
             borrowingFeeFloor: 0,
@@ -254,11 +268,13 @@ contract TestSetup is Test {
             MCR: 2e18 // 200%
         });
 
-        factory.deployNewInstance(address(stakedBTC), 
-                                  addresses.priceFeed,
-                                  ZERO_ADDRESS, // customTroveManagerImpl
-                                  ZERO_ADDRESS, // customSortedTrovesImpl
-                                  params);
+        factory.deployNewInstance(
+            address(stakedBTC),
+            addresses.priceFeed,
+            ZERO_ADDRESS, // customTroveManagerImpl
+            ZERO_ADDRESS, // customSortedTrovesImpl
+            params
+        );
 
         // 1 TroveManager deployed
         assertEq(1, factory.troveManagerCount());
@@ -269,7 +285,7 @@ contract TestSetup is Test {
         // Register new TroveManager with BabelVault to receive token emissions
         // address newTroveMsg = factory.troveManagers(0);
         // babelVault.registerReceiver(newTroveMsg, 2);
-        // 
+        //
         // approve BorrowerOperations for 50 StakedBTC tokens
         // stakedBTC.approve(addresses.borrowerOps, 50e18);
         vm.stopPrank();

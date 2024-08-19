@@ -8,11 +8,11 @@ import {ILiquidityGauge} from "../../interfaces/ILiquidityGauge.sol";
 import {BabelOwnable} from "../../dependencies/BabelOwnable.sol";
 
 /**
-    @title Babel Curve Deposit Wrapper
-    @notice Standard ERC20 interface around a deposit of a Curve LP token into it's
-            associated gauge. Tokens are minted by depositing Curve LP tokens, and
-            burned to receive the LP tokens back. Holders may claim BABEL emissions
-            on top of the earned CRV.
+ * @title Babel Curve Deposit Wrapper
+ *     @notice Standard ERC20 interface around a deposit of a Curve LP token into it's
+ *             associated gauge. Tokens are minted by depositing Curve LP tokens, and
+ *             burned to receive the LP tokens back. Holders may claim BABEL emissions
+ *             on top of the earned CRV.
  */
 contract CurveDepositToken {
     IERC20 public immutable BABEL;

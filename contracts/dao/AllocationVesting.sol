@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { DelegatedOps } from "../dependencies/DelegatedOps.sol";
-import { BabelOwnable } from "../dependencies/BabelOwnable.sol";
-import { ITokenLocker } from "../interfaces/ITokenLocker.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {DelegatedOps} from "../dependencies/DelegatedOps.sol";
+import {BabelOwnable} from "../dependencies/BabelOwnable.sol";
+import {ITokenLocker} from "../interfaces/ITokenLocker.sol";
 
 /**
  * @title Vesting contract for team and investors
@@ -86,7 +86,7 @@ contract AllocationVesting is DelegatedOps, Ownable {
         vestingStart = vestingStart_;
         uint256 loopEnd = allocationSplits.length;
         uint256 totalPoints;
-        for (uint256 i; i < loopEnd; ) {
+        for (uint256 i; i < loopEnd;) {
             address recipient = allocationSplits[i].recipient;
             uint8 numberOfWeeks = allocationSplits[i].numberOfWeeks;
             uint256 points = allocationSplits[i].points;
@@ -115,8 +115,9 @@ contract AllocationVesting is DelegatedOps, Ownable {
         AllocationState memory toAllocation = allocations[to];
         uint8 numberOfWeeksFrom = fromAllocation.numberOfWeeks;
         uint8 numberOfWeeksTo = toAllocation.numberOfWeeks;
-        if (numberOfWeeksTo != 0 && numberOfWeeksTo != numberOfWeeksFrom)
+        if (numberOfWeeksTo != 0 && numberOfWeeksTo != numberOfWeeksFrom) {
             revert IncompatibleVestingPeriod(numberOfWeeksFrom, numberOfWeeksTo);
+        }
         uint256 totalVested = _vestedAt(block.timestamp, fromAllocation.points, numberOfWeeksFrom);
         if (totalVested < fromAllocation.claimed) revert LockedAllocation();
         if (points == 0) revert ZeroAllocation();
@@ -153,11 +154,10 @@ contract AllocationVesting is DelegatedOps, Ownable {
      * @param receiver Receiver of the lock
      * @param amount Amount to preclaim. If 0 the maximum allowed will be locked
      */
-    function lockFutureClaimsWithReceiver(
-        address account,
-        address receiver,
-        uint256 amount
-    ) public callerOrDelegated(account) {
+    function lockFutureClaimsWithReceiver(address account, address receiver, uint256 amount)
+        public
+        callerOrDelegated(account)
+    {
         AllocationState memory allocation = allocations[account];
         if (allocation.points == 0 || vestingStart == 0) revert CannotLock();
         uint256 claimedUpdated = allocation.claimed;
@@ -190,12 +190,10 @@ contract AllocationVesting is DelegatedOps, Ownable {
     }
 
     // This function exists to avoid reloading the AllocationState struct in memory
-    function _claim(
-        address account,
-        uint256 points,
-        uint256 claimed,
-        uint256 numberOfWeeks
-    ) private returns (uint256 claimedUpdated) {
+    function _claim(address account, uint256 points, uint256 claimed, uint256 numberOfWeeks)
+        private
+        returns (uint256 claimedUpdated)
+    {
         if (points == 0) revert NothingToClaim();
         uint256 claimable = _claimableAt(block.timestamp, points, claimed, numberOfWeeks);
         if (claimable == 0) revert NothingToClaim();
@@ -215,12 +213,11 @@ contract AllocationVesting is DelegatedOps, Ownable {
         claimable = _claimableAt(block.timestamp, allocation.points, allocation.claimed, allocation.numberOfWeeks);
     }
 
-    function _claimableAt(
-        uint256 when,
-        uint256 points,
-        uint256 claimed,
-        uint256 numberOfWeeks
-    ) private view returns (uint256) {
+    function _claimableAt(uint256 when, uint256 points, uint256 claimed, uint256 numberOfWeeks)
+        private
+        view
+        returns (uint256)
+    {
         uint256 totalVested = _vestedAt(when, points, numberOfWeeks);
         return totalVested > claimed ? totalVested - claimed : 0;
     }

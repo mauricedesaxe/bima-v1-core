@@ -6,10 +6,10 @@ import {SystemStart} from "../dependencies/SystemStart.sol";
 import {ITokenLocker, IBabelToken, IBabelCore, IIncentiveVoting} from "../interfaces/ITokenLocker.sol";
 
 /**
-    @title Babel Token Locker
-    @notice BABEL tokens can be locked in this contract to receive "lock weight",
-            which is used within `AdminVoting` and `IncentiveVoting` to vote on
-            core protocol operations.
+ * @title Babel Token Locker
+ *     @notice BABEL tokens can be locked in this contract to receive "lock weight",
+ *             which is used within `AdminVoting` and `IncentiveVoting` to vote on
+ *             core protocol operations.
  */
 contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     // The maximum number of weeks that tokens may be locked for. Also determines the maximum
@@ -103,7 +103,7 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Allow or disallow early-exit of locks by paying a penalty
+     * @notice Allow or disallow early-exit of locks by paying a penalty
      */
     function setPenaltyWithdrawalsEnabled(bool _enabled) external onlyOwner returns (bool) {
         uint256 start = allowPenaltyWithdrawAfter;
@@ -113,9 +113,9 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get the balances currently held in this contract for an account
-        @return locked balance which is currently locked or frozen
-        @return unlocked expired lock balance which may be withdrawn
+     * @notice Get the balances currently held in this contract for an account
+     *     @return locked balance which is currently locked or frozen
+     *     @return unlocked expired lock balance which may be withdrawn
      */
     function getAccountBalances(address account) external view returns (uint256 locked, uint256 unlocked) {
         AccountData storage accountData = accountLockData[account];
@@ -152,14 +152,14 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get the current lock weight for an account
+     * @notice Get the current lock weight for an account
      */
     function getAccountWeight(address account) external view returns (uint256) {
         return getAccountWeightAt(account, getWeek());
     }
 
     /**
-        @notice Get the lock weight for an account in a given week
+     * @notice Get the lock weight for an account in a given week
      */
     function getAccountWeightAt(address account, uint256 week) public view returns (uint256) {
         if (week > getWeek()) return 0;
@@ -195,15 +195,16 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get data on an accounts's active token locks and frozen balance
-        @param account Address to query data for
-        @return lockData dynamic array of [weeks until expiration, balance of lock]
-        @return frozenAmount total frozen balance
+     * @notice Get data on an accounts's active token locks and frozen balance
+     *     @param account Address to query data for
+     *     @return lockData dynamic array of [weeks until expiration, balance of lock]
+     *     @return frozenAmount total frozen balance
      */
-    function getAccountActiveLocks(
-        address account,
-        uint256 minWeeks
-    ) external view returns (LockData[] memory lockData, uint256 frozenAmount) {
+    function getAccountActiveLocks(address account, uint256 minWeeks)
+        external
+        view
+        returns (LockData[] memory lockData, uint256 frozenAmount)
+    {
         AccountData storage accountData = accountLockData[account];
         frozenAmount = accountData.frozen;
         if (frozenAmount == 0) {
@@ -237,25 +238,26 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
             for (uint256 i; x != 0; i++) {
                 x--;
                 uint256 idx = unlockWeeks[x];
-                lockData[i] = LockData({ weeksToUnlock: idx - systemWeek, amount: unlocks[idx] });
+                lockData[i] = LockData({weeksToUnlock: idx - systemWeek, amount: unlocks[idx]});
             }
         }
         return (lockData, frozenAmount);
     }
 
     /**
-        @notice Get withdrawal and penalty amounts when withdrawing locked tokens
-        @param account Account that will withdraw locked tokens
-        @param amountToWithdraw Desired withdrawal amount, divided by `lockToTokenRatio`
-        @return amountWithdrawn Actual amount withdrawn. If `amountToWithdraw` exceeds the
-                                max possible withdrawal, the return value is the max
-                                amount received after paying the penalty.
-        @return penaltyAmountPaid The amount paid in penalty to perform this withdrawal
+     * @notice Get withdrawal and penalty amounts when withdrawing locked tokens
+     *     @param account Account that will withdraw locked tokens
+     *     @param amountToWithdraw Desired withdrawal amount, divided by `lockToTokenRatio`
+     *     @return amountWithdrawn Actual amount withdrawn. If `amountToWithdraw` exceeds the
+     *                             max possible withdrawal, the return value is the max
+     *                             amount received after paying the penalty.
+     *     @return penaltyAmountPaid The amount paid in penalty to perform this withdrawal
      */
-    function getWithdrawWithPenaltyAmounts(
-        address account,
-        uint256 amountToWithdraw
-    ) external view returns (uint256 amountWithdrawn, uint256 penaltyAmountPaid) {
+    function getWithdrawWithPenaltyAmounts(address account, uint256 amountToWithdraw)
+        external
+        view
+        returns (uint256 amountWithdrawn, uint256 penaltyAmountPaid)
+    {
         AccountData storage accountData = accountLockData[account];
         uint32[65535] storage unlocks = accountWeeklyUnlocks[account];
         if (amountToWithdraw != type(uint256).max) amountToWithdraw *= lockToTokenRatio;
@@ -295,9 +297,7 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
                     // after penalty, locked amount exceeds remaining required balance
                     // we can complete the withdrawal using only a portion of this lock
                     penaltyOnAmount =
-                        (remaining * MAX_LOCK_WEEKS) /
-                        (MAX_LOCK_WEEKS - (weeksToUnlock - offset)) -
-                        remaining;
+                        (remaining * MAX_LOCK_WEEKS) / (MAX_LOCK_WEEKS - (weeksToUnlock - offset)) - remaining;
                     uint256 dust = ((penaltyOnAmount + remaining) % lockToTokenRatio);
                     if (dust > 0) penaltyOnAmount += lockToTokenRatio - dust;
                     penaltyTotal += penaltyOnAmount;
@@ -319,14 +319,14 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get the current total lock weight
+     * @notice Get the current total lock weight
      */
     function getTotalWeight() external view returns (uint256) {
         return getTotalWeightAt(getWeek());
     }
 
     /**
-        @notice Get the total lock weight for a given week
+     * @notice Get the total lock weight for a given week
      */
     function getTotalWeightAt(uint256 week) public view returns (uint256) {
         uint256 systemWeek = getWeek();
@@ -350,20 +350,20 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get the current lock weight for an account
-        @dev Also updates local storage values for this account. Using
-             this function over it's `view` counterpart is preferred for
-             contract -> contract interactions.
+     * @notice Get the current lock weight for an account
+     *     @dev Also updates local storage values for this account. Using
+     *          this function over it's `view` counterpart is preferred for
+     *          contract -> contract interactions.
      */
     function getAccountWeightWrite(address account) external returns (uint256) {
         return _weeklyWeightWrite(account);
     }
 
     /**
-        @notice Get the current total lock weight
-        @dev Also updates local storage values for total weights. Using
-             this function over it's `view` counterpart is preferred for
-             contract -> contract interactions.
+     * @notice Get the current total lock weight
+     *     @dev Also updates local storage values for total weights. Using
+     *          this function over it's `view` counterpart is preferred for
+     *          contract -> contract interactions.
      */
     function getTotalWeightWrite() public returns (uint256) {
         uint256 week = getWeek();
@@ -390,16 +390,16 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Deposit tokens into the contract to create a new lock.
-        @dev A lock is created for a given number of weeks. Minimum 1, maximum `MAX_LOCK_WEEKS`.
-             An account can have multiple locks active at the same time. The account's "lock weight"
-             is calculated as the sum of [number of tokens] * [weeks until unlock] for all active
-             locks. At the start of each new week, each lock's weeks until unlock is reduced by 1.
-             Locks that reach 0 weeks no longer receive any weight, and tokens may be withdrawn by
-             calling `withdrawExpiredLocks`.
-        @param _account Address to create a new lock for (does not have to be the caller)
-        @param _amount Amount of tokens to lock. This balance transfered from the caller.
-        @param _weeks The number of weeks for the lock
+     * @notice Deposit tokens into the contract to create a new lock.
+     *     @dev A lock is created for a given number of weeks. Minimum 1, maximum `MAX_LOCK_WEEKS`.
+     *          An account can have multiple locks active at the same time. The account's "lock weight"
+     *          is calculated as the sum of [number of tokens] * [weeks until unlock] for all active
+     *          locks. At the start of each new week, each lock's weeks until unlock is reduced by 1.
+     *          Locks that reach 0 weeks no longer receive any weight, and tokens may be withdrawn by
+     *          calling `withdrawExpiredLocks`.
+     *     @param _account Address to create a new lock for (does not have to be the caller)
+     *     @param _amount Amount of tokens to lock. This balance transfered from the caller.
+     *     @param _weeks The number of weeks for the lock
      */
     function lock(address _account, uint256 _amount, uint256 _weeks) external returns (bool) {
         require(_weeks > 0, "Min 1 week");
@@ -450,20 +450,20 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Extend the length of an existing lock.
-        @param _amount Amount of tokens to extend the lock for. When the value given equals
-                       the total size of the existing lock, the entire lock is moved.
-                       If the amount is less, then the lock is effectively split into
-                       two locks, with a portion of the balance extended to the new length
-                       and the remaining balance at the old length.
-        @param _weeks The number of weeks for the lock that is being extended.
-        @param _newWeeks The number of weeks to extend the lock until.
+     * @notice Extend the length of an existing lock.
+     *     @param _amount Amount of tokens to extend the lock for. When the value given equals
+     *                    the total size of the existing lock, the entire lock is moved.
+     *                    If the amount is less, then the lock is effectively split into
+     *                    two locks, with a portion of the balance extended to the new length
+     *                    and the remaining balance at the old length.
+     *     @param _weeks The number of weeks for the lock that is being extended.
+     *     @param _newWeeks The number of weeks to extend the lock until.
      */
-    function extendLock(
-        uint256 _amount,
-        uint256 _weeks,
-        uint256 _newWeeks
-    ) external notFrozen(msg.sender) returns (bool) {
+    function extendLock(uint256 _amount, uint256 _weeks, uint256 _newWeeks)
+        external
+        notFrozen(msg.sender)
+        returns (bool)
+    {
         require(_weeks > 0, "Min 1 week");
         require(_newWeeks <= MAX_LOCK_WEEKS, "Exceeds MAX_LOCK_WEEKS");
         require(_weeks < _newWeeks, "newWeeks must be greater than weeks");
@@ -509,11 +509,11 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Deposit tokens into the contract to create multiple new locks.
-        @param _account Address to create new locks for (does not have to be the caller)
-        @param newLocks Array of [(amount, weeks), ...] where amount is the amount of
-                        tokens to lock, and weeks is the number of weeks for the lock.
-                        All tokens to be locked are transferred from the caller.
+     * @notice Deposit tokens into the contract to create multiple new locks.
+     *     @param _account Address to create new locks for (does not have to be the caller)
+     *     @param newLocks Array of [(amount, weeks), ...] where amount is the amount of
+     *                     tokens to lock, and weeks is the number of weeks for the lock.
+     *                     All tokens to be locked are transferred from the caller.
      */
     function lockMany(address _account, LockData[] calldata newLocks) external notFrozen(_account) returns (bool) {
         AccountData storage accountData = accountLockData[_account];
@@ -524,10 +524,8 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
         uint256 systemWeek = getWeek();
 
         // copy maybe-updated bitfield entries to memory
-        uint256[2] memory bitfield = [
-            accountData.updateWeeks[systemWeek / 256],
-            accountData.updateWeeks[(systemWeek / 256) + 1]
-        ];
+        uint256[2] memory bitfield =
+            [accountData.updateWeeks[systemWeek / 256], accountData.updateWeeks[(systemWeek / 256) + 1]];
 
         uint256 increasedAmount;
         uint256 increasedWeight;
@@ -576,11 +574,11 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Extend the length of multiple existing locks.
-        @param newExtendLocks Array of [(amount, weeks, newWeeks), ...] where amount is the amount
-                              of tokens to extend the lock for, weeks is the current number of weeks
-                              for the lock that is being extended, and newWeeks is the number of weeks
-                              to extend the lock until.
+     * @notice Extend the length of multiple existing locks.
+     *     @param newExtendLocks Array of [(amount, weeks, newWeeks), ...] where amount is the amount
+     *                           of tokens to extend the lock for, weeks is the current number of weeks
+     *                           for the lock that is being extended, and newWeeks is the number of weeks
+     *                           to extend the lock until.
      */
     function extendMany(ExtendLockData[] calldata newExtendLocks) external notFrozen(msg.sender) returns (bool) {
         AccountData storage accountData = accountLockData[msg.sender];
@@ -591,10 +589,8 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
         uint256 systemWeek = getWeek();
 
         // copy maybe-updated bitfield entries to memory
-        uint256[2] memory bitfield = [
-            accountData.updateWeeks[systemWeek / 256],
-            accountData.updateWeeks[(systemWeek / 256) + 1]
-        ];
+        uint256[2] memory bitfield =
+            [accountData.updateWeeks[systemWeek / 256], accountData.updateWeeks[(systemWeek / 256) + 1]];
         uint256 increasedWeight;
 
         // iterate extended locks and store intermediate values in memory where possible
@@ -644,11 +640,11 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Freeze all locks for the caller
-        @dev When an account's locks are frozen, the weeks-to-unlock does not decay.
-             All other functionality remains the same; the account can continue to lock,
-             extend locks, and withdraw tokens. Freezing greatly reduces gas costs for
-             actions such as emissions voting.
+     * @notice Freeze all locks for the caller
+     *     @dev When an account's locks are frozen, the weeks-to-unlock does not decay.
+     *          All other functionality remains the same; the account can continue to lock,
+     *          extend locks, and withdraw tokens. Freezing greatly reduces gas costs for
+     *          actions such as emissions voting.
      */
     function freeze() external notFrozen(msg.sender) {
         AccountData storage accountData = accountLockData[msg.sender];
@@ -690,18 +686,17 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Unfreeze all locks for the caller
-        @dev When an account's locks are unfrozen, the weeks-to-unlock decay normally.
-             This is the default locking behaviour for each account. Unfreezing locks
-             also updates the frozen status within `IncentiveVoter` - otherwise it could be
-             possible for accounts to have a larger registered vote weight than their actual
-             lock weight.
-        @param keepIncentivesVote If true, existing incentive votes are preserved when updating
-                                  the frozen status within `IncentiveVoter`. Voting with unfrozen
-                                  weight uses significantly more gas than voting with frozen weight.
-                                  If the caller has many active locks and/or many votes, it will be
-                                  much cheaper to set this value to false.
-
+     * @notice Unfreeze all locks for the caller
+     *     @dev When an account's locks are unfrozen, the weeks-to-unlock decay normally.
+     *          This is the default locking behaviour for each account. Unfreezing locks
+     *          also updates the frozen status within `IncentiveVoter` - otherwise it could be
+     *          possible for accounts to have a larger registered vote weight than their actual
+     *          lock weight.
+     *     @param keepIncentivesVote If true, existing incentive votes are preserved when updating
+     *                               the frozen status within `IncentiveVoter`. Voting with unfrozen
+     *                               weight uses significantly more gas than voting with frozen weight.
+     *                               If the caller has many active locks and/or many votes, it will be
+     *                               much cheaper to set this value to false.
      */
     function unfreeze(bool keepIncentivesVote) external {
         AccountData storage accountData = accountLockData[msg.sender];
@@ -735,10 +730,9 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Withdraw tokens from locks that have expired
-        @param _weeks Optional number of weeks for the re-locking.
-                      If 0 the full amount is transferred back to the user.
-
+     * @notice Withdraw tokens from locks that have expired
+     *     @param _weeks Optional number of weeks for the re-locking.
+     *                   If 0 the full amount is transferred back to the user.
      */
     function withdrawExpiredLocks(uint256 _weeks) external returns (bool) {
         _weeklyWeightWrite(msg.sender);
@@ -758,22 +752,22 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Pay a penalty to withdraw locked tokens
-        @dev Withdrawals are processed starting with the lock that will expire soonest.
-             The penalty starts at 100% and decays linearly based on the number of weeks
-             remaining until the tokens unlock. The exact calculation used is:
-
-             [total amount] * [weeks to unlock] / MAX_LOCK_WEEKS = [penalty amount]
-
-        @param amountToWithdraw Amount to withdraw, divided by `lockToTokenRatio`. This
-                                is the same number of tokens that will be received; the
-                                penalty amount is taken on top of this. Reverts if the
-                                caller's locked balances are insufficient to cover both
-                                the withdrawal and penalty amounts. Setting this value as
-                                `type(uint256).max` withdrawals the entire available locked
-                                balance, excluding any lock at `MAX_LOCK_WEEKS` as the
-                                penalty on this lock would be 100%.
-        @return uint256 Amount of tokens withdrawn
+     * @notice Pay a penalty to withdraw locked tokens
+     *     @dev Withdrawals are processed starting with the lock that will expire soonest.
+     *          The penalty starts at 100% and decays linearly based on the number of weeks
+     *          remaining until the tokens unlock. The exact calculation used is:
+     *
+     *          [total amount] * [weeks to unlock] / MAX_LOCK_WEEKS = [penalty amount]
+     *
+     *     @param amountToWithdraw Amount to withdraw, divided by `lockToTokenRatio`. This
+     *                             is the same number of tokens that will be received; the
+     *                             penalty amount is taken on top of this. Reverts if the
+     *                             caller's locked balances are insufficient to cover both
+     *                             the withdrawal and penalty amounts. Setting this value as
+     *                             `type(uint256).max` withdrawals the entire available locked
+     *                             balance, excluding any lock at `MAX_LOCK_WEEKS` as the
+     *                             penalty on this lock would be 100%.
+     *     @return uint256 Amount of tokens withdrawn
      */
     function withdrawWithPenalty(uint256 amountToWithdraw) external notFrozen(msg.sender) returns (uint256) {
         require(penaltyWithdrawalsEnabled, "Penalty withdrawals are disabled");
@@ -867,7 +861,7 @@ contract TokenLocker is ITokenLocker, BabelOwnable, SystemStart {
     }
 
     /**
-        @dev Updates all data for a given account and returns the account's current weight and week
+     * @dev Updates all data for a given account and returns the account's current weight and week
      */
     function _weeklyWeightWrite(address account) internal returns (uint256 weight) {
         AccountData storage accountData = accountLockData[account];

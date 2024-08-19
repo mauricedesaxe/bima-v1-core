@@ -22,9 +22,7 @@ interface IPriceFeed is IBabelOwnable {
 
     function TARGET_DIGITS() external view returns (uint256);
 
-    function oracleRecords(
-        address
-    )
+    function oracleRecords(address)
         external
         view
         returns (
@@ -37,7 +35,8 @@ interface IPriceFeed is IBabelOwnable {
             bool isEthIndexed
         );
 
-    function priceRecords(
-        address
-    ) external view returns (uint96 scaledPrice, uint32 timestamp, uint32 lastUpdated, uint80 roundId);
+    function priceRecords(address)
+        external
+        view
+        returns (uint96 scaledPrice, uint32 timestamp, uint32 lastUpdated, uint80 roundId);
 }

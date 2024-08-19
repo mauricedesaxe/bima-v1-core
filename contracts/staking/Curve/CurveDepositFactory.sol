@@ -10,8 +10,8 @@ interface ICurveDepositToken {
 }
 
 /**
-    @notice Babel Curve Factory
-    @title Deploys clones of `CurveDepositToken` as directed by the Babel DAO
+ * @notice Babel Curve Factory
+ *     @title Deploys clones of `CurveDepositToken` as directed by the Babel DAO
  */
 contract CurveFactory is BabelOwnable {
     using Clones for address;
@@ -27,8 +27,8 @@ contract CurveFactory is BabelOwnable {
     }
 
     /**
-        @dev After calling this function, the owner should also call `Vault.registerReceiver`
-             to enable BABEL emissions on the newly deployed `CurveDepositToken`
+     * @dev After calling this function, the owner should also call `Vault.registerReceiver`
+     *          to enable BABEL emissions on the newly deployed `CurveDepositToken`
      */
     function deployNewInstance(address gauge) external onlyOwner {
         address depositToken = depositTokenImpl.cloneDeterministic(bytes32(bytes20(gauge)));

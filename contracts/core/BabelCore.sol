@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import {IBabelCore} from "../interfaces/IBabelCore.sol";
 
 /**
-    @title Babel Core
-    @notice Single source of truth for system-wide values and contract ownership.
-
-            Ownership of this contract should be the Babel DAO via `AdminVoting`.
-            Other ownable Babel contracts inherit their ownership from this contract
-            using `BabelOwnable`.
+ * @title Babel Core
+ *     @notice Single source of truth for system-wide values and contract ownership.
+ *
+ *             Ownership of this contract should be the Babel DAO via `AdminVoting`.
+ *             Other ownable Babel contracts inherit their ownership from this contract
+ *             using `BabelOwnable`.
  */
 contract BabelCore is IBabelCore {
     address public feeReceiver;
@@ -69,7 +69,7 @@ contract BabelCore is IBabelCore {
 
     /**
      * @notice Set the guardian address
-               The guardian can execute some emergency actions
+     *            The guardian can execute some emergency actions
      * @param _guardian Guardian address
      */
     function setGuardian(address _guardian) external onlyOwner {

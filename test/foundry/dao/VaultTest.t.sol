@@ -13,7 +13,7 @@ import {TestSetup, IBabelVault, BabelVault, IIncentiveVoting, ITokenLocker} from
 contract VaultTest is TestSetup {
     // only vault uses these
     EmissionSchedule internal emissionSchedule;
-    BoostCalculator  internal boostCalc;
+    BoostCalculator internal boostCalc;
 
     uint256 internal constant INIT_BS_GRACE_WEEKS = 1;
     uint64 internal constant INIT_ES_LOCK_WEEKS = 4;
@@ -26,20 +26,20 @@ contract VaultTest is TestSetup {
 
     function setUp() public virtual override {
         super.setUp();
-        
+
         // create EmissionSchedule
-        emissionSchedule = new EmissionSchedule(address(babelCore), 
-                                                IIncentiveVoting(address(incentiveVoting)),
-                                                IBabelVault(address(babelVault)),
-                                                INIT_ES_LOCK_WEEKS,
-                                                INIT_ES_LOCK_DECAY_WEEKS,
-                                                INIT_ES_WEEKLY_PCT,
-                                                scheduledWeeklyPct);
+        emissionSchedule = new EmissionSchedule(
+            address(babelCore),
+            IIncentiveVoting(address(incentiveVoting)),
+            IBabelVault(address(babelVault)),
+            INIT_ES_LOCK_WEEKS,
+            INIT_ES_LOCK_DECAY_WEEKS,
+            INIT_ES_WEEKLY_PCT,
+            scheduledWeeklyPct
+        );
 
         // create BoostCalculator
-        boostCalc = new BoostCalculator(address(babelCore),
-                                        ITokenLocker(address(tokenLocker)),
-                                        INIT_BS_GRACE_WEEKS);
+        boostCalc = new BoostCalculator(address(babelCore), ITokenLocker(address(tokenLocker)), INIT_BS_GRACE_WEEKS);
     }
 
     function test_constructor() external view {
@@ -51,7 +51,7 @@ contract VaultTest is TestSetup {
         assertEq(babelVault.lockToTokenRatio(), INIT_LOCK_TO_TOKEN_RATIO);
 
         // StabilityPool made receiver with ID 0
-        (address account, bool isActive) = babelVault.idToReceiver(0);        
+        (address account, bool isActive) = babelVault.idToReceiver(0);
         assertEq(account, address(stabilityPool));
         assertEq(isActive, true);
 
@@ -64,12 +64,14 @@ contract VaultTest is TestSetup {
         BabelVault.InitialAllowance[] memory initialAllowances;
 
         vm.prank(users.owner);
-        babelVault.setInitialParameters(emissionSchedule,
-                                        boostCalc,
-                                        INIT_BAB_TKN_TOTAL_SUPPLY,
-                                        INIT_VLT_LOCK_WEEKS,
-                                        _fixedInitialAmounts,
-                                        initialAllowances);
+        babelVault.setInitialParameters(
+            emissionSchedule,
+            boostCalc,
+            INIT_BAB_TKN_TOTAL_SUPPLY,
+            INIT_VLT_LOCK_WEEKS,
+            _fixedInitialAmounts,
+            initialAllowances
+        );
 
         // addresses correctly set
         assertEq(address(babelVault.emissionSchedule()), address(emissionSchedule));
@@ -90,6 +92,5 @@ contract VaultTest is TestSetup {
 
         // BabelVault::lockWeeks correct
         assertEq(babelVault.lockWeeks(), INIT_VLT_LOCK_WEEKS);
-
     }
 }

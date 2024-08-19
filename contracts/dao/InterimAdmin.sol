@@ -6,11 +6,11 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IBabelCore} from "../interfaces/IBabelCore.sol";
 
 /**
-    @title Babel DAO Interim Admin
-    @notice Temporary ownership contract for all Babel contracts during bootstrap phase. Allows executing
-            arbitrary function calls by the deployer following a minimum time before execution.
-            The protocol guardian can cancel any proposals and cannot be replaced.
-            To avoid a malicious flood attack the number of daily proposals is capped.
+ * @title Babel DAO Interim Admin
+ *     @notice Temporary ownership contract for all Babel contracts during bootstrap phase. Allows executing
+ *             arbitrary function calls by the deployer following a minimum time before execution.
+ *             The protocol guardian can cancel any proposals and cannot be replaced.
+ *             To avoid a malicious flood attack the number of daily proposals is capped.
  */
 contract InterimAdmin is Ownable {
     using Address for address;
@@ -52,35 +52,34 @@ contract InterimAdmin is Ownable {
     }
 
     /**
-        @notice The total number of votes created
+     * @notice The total number of votes created
      */
     function getProposalCount() external view returns (uint256) {
         return proposalData.length;
     }
 
     /**
-        @notice Gets information on a specific proposal
+     * @notice Gets information on a specific proposal
      */
-    function getProposalData(
-        uint256 id
-    )
+    function getProposalData(uint256 id)
         external
         view
         returns (uint256 createdAt, uint256 canExecuteAfter, bool executed, bool canExecute, Action[] memory payload)
     {
         Proposal memory proposal = proposalData[id];
         payload = proposalPayloads[id];
-        canExecute = (!proposal.processed &&
-            proposal.canExecuteAfter < block.timestamp &&
-            proposal.canExecuteAfter + MAX_TIME_TO_EXECUTION > block.timestamp);
+        canExecute = (
+            !proposal.processed && proposal.canExecuteAfter < block.timestamp
+                && proposal.canExecuteAfter + MAX_TIME_TO_EXECUTION > block.timestamp
+        );
 
         return (proposal.createdAt, proposal.canExecuteAfter, proposal.processed, canExecute, payload);
     }
 
     /**
-        @notice Create a new proposal
-        @param payload Tuple of [(target address, calldata), ... ] to be
-                       executed if the proposal is passed.
+     * @notice Create a new proposal
+     *     @param payload Tuple of [(target address, calldata), ... ] to be
+     *                    executed if the proposal is passed.
      */
     function createNewProposal(Action[] calldata payload) external onlyOwner {
         require(payload.length > 0, "Empty payload");
@@ -108,11 +107,11 @@ contract InterimAdmin is Ownable {
     }
 
     /**
-        @notice Cancels a pending proposal
-        @dev Can only be called by the guardian to avoid malicious proposals
-             The guardian cannot cancel a proposal where the only action is
-             changing the guardian.
-        @param id Proposal ID
+     * @notice Cancels a pending proposal
+     *     @dev Can only be called by the guardian to avoid malicious proposals
+     *          The guardian cannot cancel a proposal where the only action is
+     *          changing the guardian.
+     *     @param id Proposal ID
      */
     function cancelProposal(uint256 id) external {
         require(msg.sender == owner() || msg.sender == babelCore.guardian(), "Unauthorized");
@@ -122,9 +121,9 @@ contract InterimAdmin is Ownable {
     }
 
     /**
-        @notice Execute a proposal's payload
-        @dev Can only be called if the proposal has been active for at least `MIN_TIME_TO_EXECUTION`
-        @param id Proposal ID
+     * @notice Execute a proposal's payload
+     *     @dev Can only be called if the proposal has been active for at least `MIN_TIME_TO_EXECUTION`
+     *     @param id Proposal ID
      */
     function executeProposal(uint256 id) external onlyOwner {
         require(id < proposalData.length, "Invalid ID");
@@ -148,15 +147,15 @@ contract InterimAdmin is Ownable {
     }
 
     /**
-        @dev Allow accepting ownership transfer of `BabelCore`
+     * @dev Allow accepting ownership transfer of `BabelCore`
      */
     function acceptTransferOwnership() external onlyOwner {
         babelCore.acceptTransferOwnership();
     }
 
     /**
-        @dev Restricted method to transfer ownership of `BabelCore`
-             to the actual Admin voting contract
+     * @dev Restricted method to transfer ownership of `BabelCore`
+     *          to the actual Admin voting contract
      */
     function transferOwnershipToAdminVoting() external {
         require(msg.sender == owner() || msg.sender == babelCore.guardian(), "Unauthorized");

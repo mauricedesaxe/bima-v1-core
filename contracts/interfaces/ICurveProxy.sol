@@ -54,12 +54,9 @@ interface ICurveProxy {
 
     function setDepositManager(address _depositManager) external returns (bool);
 
-    function setExecutePermissions(
-        address caller,
-        address target,
-        bytes4[] calldata selectors,
-        bool permitted
-    ) external returns (bool);
+    function setExecutePermissions(address caller, address target, bytes4[] calldata selectors, bool permitted)
+        external
+        returns (bool);
 
     function setGaugeRewardsReceiver(address gauge, address receiver) external returns (bool);
 
@@ -73,12 +70,9 @@ interface ICurveProxy {
 
     function voteInCurveDao(IAragon aragon, uint256 id, bool support) external returns (bool);
 
-    function withdrawFromGauge(
-        address gauge,
-        IERC20 lpToken,
-        uint256 amount,
-        address receiver
-    ) external returns (bool);
+    function withdrawFromGauge(address gauge, IERC20 lpToken, uint256 amount, address receiver)
+        external
+        returns (bool);
 
     function CRV() external view returns (IERC20);
 

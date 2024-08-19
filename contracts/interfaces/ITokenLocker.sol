@@ -6,11 +6,13 @@ import {ISystemStart} from "./ISystemStart.sol";
 import {IBabelToken} from "./IBabelToken.sol";
 import {IBabelCore} from "./IBabelCore.sol";
 import {IIncentiveVoting} from "./IIncentiveVoting.sol";
+
 interface ITokenLocker is IBabelOwnable, ISystemStart {
     struct LockData {
         uint256 amount;
         uint256 weeksToUnlock;
     }
+
     struct ExtendLockData {
         uint256 amount;
         uint256 currentWeeks;
@@ -49,10 +51,10 @@ interface ITokenLocker is IBabelOwnable, ISystemStart {
 
     function MAX_LOCK_WEEKS() external view returns (uint256);
 
-    function getAccountActiveLocks(
-        address account,
-        uint256 minWeeks
-    ) external view returns (LockData[] memory lockData, uint256 frozenAmount);
+    function getAccountActiveLocks(address account, uint256 minWeeks)
+        external
+        view
+        returns (LockData[] memory lockData, uint256 frozenAmount);
 
     function getAccountBalances(address account) external view returns (uint256 locked, uint256 unlocked);
 
@@ -64,10 +66,10 @@ interface ITokenLocker is IBabelOwnable, ISystemStart {
 
     function getTotalWeightAt(uint256 week) external view returns (uint256);
 
-    function getWithdrawWithPenaltyAmounts(
-        address account,
-        uint256 amountToWithdraw
-    ) external view returns (uint256 amountWithdrawn, uint256 penaltyAmountPaid);
+    function getWithdrawWithPenaltyAmounts(address account, uint256 amountToWithdraw)
+        external
+        view
+        returns (uint256 amountWithdrawn, uint256 penaltyAmountPaid);
 
     function incentiveVoter() external view returns (IIncentiveVoting);
 

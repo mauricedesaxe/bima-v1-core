@@ -3,35 +3,41 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
-import {ILiquidationManager, IBabelBase, IStabilityPool, IBorrowerOperations, ITroveManager} from "../interfaces/ILiquidationManager.sol";
+import {
+    ILiquidationManager,
+    IBabelBase,
+    IStabilityPool,
+    IBorrowerOperations,
+    ITroveManager
+} from "../interfaces/ILiquidationManager.sol";
 import {BabelMath} from "../dependencies/BabelMath.sol";
 import {BabelBase} from "../dependencies/BabelBase.sol";
 
 /**
-    @title Babel Liquidation Manager
-    @notice Based on Liquity's `TroveManager`
-            https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
-
-            This contract has a 1:n relationship with `TroveManager`, handling liquidations
-            for every active collateral within the system.
-
-            Anyone can call to liquidate an eligible trove at any time. There is no requirement
-            that liquidations happen in order according to trove ICRs. There are three ways that
-            a liquidation can occur:
-
-            1. ICR <= 100
-               The trove's entire debt and collateral is redistributed between remaining active troves.
-
-            2. 100 < ICR < MCR
-               The trove is liquidated using stability pool deposits. The collateral is distributed
-               amongst stability pool depositors. If the stability pool's balance is insufficient to
-               completely repay the trove, the remaining debt and collateral is redistributed between
-               the remaining active troves.
-
-            3. MCR <= ICR < TCR && TCR < CCR
-               The trove is liquidated using stability pool deposits. Collateral equal to MCR of
-               the value of the debt is distributed between stability pool depositors. The remaining
-               collateral is left claimable by the trove owner.
+ * @title Babel Liquidation Manager
+ *     @notice Based on Liquity's `TroveManager`
+ *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
+ *
+ *             This contract has a 1:n relationship with `TroveManager`, handling liquidations
+ *             for every active collateral within the system.
+ *
+ *             Anyone can call to liquidate an eligible trove at any time. There is no requirement
+ *             that liquidations happen in order according to trove ICRs. There are three ways that
+ *             a liquidation can occur:
+ *
+ *             1. ICR <= 100
+ *                The trove's entire debt and collateral is redistributed between remaining active troves.
+ *
+ *             2. 100 < ICR < MCR
+ *                The trove is liquidated using stability pool deposits. The collateral is distributed
+ *                amongst stability pool depositors. If the stability pool's balance is insufficient to
+ *                completely repay the trove, the remaining debt and collateral is redistributed between
+ *                the remaining active troves.
+ *
+ *             3. MCR <= ICR < TCR && TCR < CCR
+ *                The trove is liquidated using stability pool deposits. Collateral equal to MCR of
+ *                the value of the debt is distributed between stability pool depositors. The remaining
+ *                collateral is left claimable by the trove owner.
  */
 contract LiquidationManager is ILiquidationManager, BabelBase {
     IStabilityPool public immutable stabilityPool;
@@ -80,18 +86,11 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     }
 
     event TroveUpdated(
-        address indexed _borrower,
-        uint256 _debt,
-        uint256 _coll,
-        uint256 _stake,
-        TroveManagerOperation _operation
+        address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );
     event TroveLiquidated(address indexed _borrower, uint256 _debt, uint256 _coll, TroveManagerOperation _operation);
     event Liquidation(
-        uint256 _liquidatedDebt,
-        uint256 _liquidatedColl,
-        uint256 _collGasCompensation,
-        uint256 _debtGasCompensation
+        uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _debtGasCompensation
     );
     event TroveUpdated(address indexed _borrower, uint256 _debt, uint256 _coll, uint256 stake, uint8 operation);
     event TroveLiquidated(address indexed _borrower, uint256 _debt, uint256 _coll, uint8 operation);
@@ -122,9 +121,9 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     // --- Trove Liquidation functions ---
 
     /**
-        @notice Liquidate a single trove
-        @dev Reverts if the trove is not active, or cannot be liquidated
-        @param borrower Borrower address to liquidate
+     * @notice Liquidate a single trove
+     *     @dev Reverts if the trove is not active, or cannot be liquidated
+     *     @param borrower Borrower address to liquidate
      */
     function liquidate(ITroveManager troveManager, address borrower) external {
         require(troveManager.getTroveStatus(borrower) == 1, "TroveManager: Trove does not exist or is closed");
@@ -135,11 +134,11 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     }
 
     /**
-        @notice Liquidate a sequence of troves
-        @dev Iterates through troves starting with the lowest ICR
-        @param maxTrovesToLiquidate The maximum number of troves to liquidate
-        @param maxICR Maximum ICR to liquidate. Should be set to MCR if the system
-                      is not in recovery mode, to minimize gas costs for this call.
+     * @notice Liquidate a sequence of troves
+     *     @dev Iterates through troves starting with the lowest ICR
+     *     @param maxTrovesToLiquidate The maximum number of troves to liquidate
+     *     @param maxICR Maximum ICR to liquidate. Should be set to MCR if the system
+     *                   is not in recovery mode, to minimize gas costs for this call.
      */
     function liquidateTroves(ITroveManager troveManager, uint256 maxTrovesToLiquidate, uint256 maxICR) external {
         require(_enabledTroveManagers[troveManager], "TroveManager not approved");
@@ -172,15 +171,13 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
                 singleLiquidation = _liquidateWithoutSP(troveManager, account);
                 _applyLiquidationValuesToTotals(totals, singleLiquidation);
             } else if (ICR < troveManagerValues.MCR) {
-                singleLiquidation = _liquidateNormalMode(
-                    troveManager,
-                    account,
-                    debtInStabPool,
-                    troveManagerValues.sunsetting
-                );
+                singleLiquidation =
+                    _liquidateNormalMode(troveManager, account, debtInStabPool, troveManagerValues.sunsetting);
                 debtInStabPool -= singleLiquidation.debtToOffset;
                 _applyLiquidationValuesToTotals(totals, singleLiquidation);
-            } else break; // break if the loop reaches a Trove with ICR >= MCR
+            } else {
+                break;
+            } // break if the loop reaches a Trove with ICR >= MCR
             unchecked {
                 --trovesRemaining;
                 --troveCount;
@@ -205,17 +202,12 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
                 if (TCR >= CCR || ICR >= TCR) break;
 
                 singleLiquidation = _tryLiquidateWithCap(
-                    _troveManager,
-                    account,
-                    debtInStabPool,
-                    troveManagerValues.MCR,
-                    troveManagerValues.price
+                    _troveManager, account, debtInStabPool, troveManagerValues.MCR, troveManagerValues.price
                 );
                 if (singleLiquidation.debtToOffset == 0) continue;
                 debtInStabPool -= singleLiquidation.debtToOffset;
                 entireSystemColl -=
-                    (singleLiquidation.collToSendToSP + singleLiquidation.collSurplus) *
-                    troveManagerValues.price;
+                    (singleLiquidation.collToSendToSP + singleLiquidation.collSurplus) * troveManagerValues.price;
                 entireSystemDebt -= singleLiquidation.debtToOffset;
                 _applyLiquidationValuesToTotals(totals, singleLiquidation);
                 unchecked {
@@ -228,14 +220,10 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
         if (totals.totalDebtToOffset > 0 || totals.totalCollToSendToSP > 0) {
             // Move liquidated collateral and Debt to the appropriate pools
             stabilityPoolCached.offset(
-                troveManager.collateralToken(),
-                totals.totalDebtToOffset,
-                totals.totalCollToSendToSP
+                troveManager.collateralToken(), totals.totalDebtToOffset, totals.totalCollToSendToSP
             );
             troveManager.decreaseDebtAndSendCollateral(
-                address(stabilityPoolCached),
-                totals.totalDebtToOffset,
-                totals.totalCollToSendToSP
+                address(stabilityPoolCached), totals.totalDebtToOffset, totals.totalCollToSendToSP
             );
         }
         troveManager.finalizeLiquidation(
@@ -256,10 +244,10 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     }
 
     /**
-        @notice Liquidate a custom list of troves
-        @dev Reverts if there is not a single trove that can be liquidated
-        @param _troveArray List of borrower addresses to liquidate. Troves that were already
-                           liquidated, or cannot be liquidated, are ignored.
+     * @notice Liquidate a custom list of troves
+     *     @dev Reverts if there is not a single trove that can be liquidated
+     *     @param _troveArray List of borrower addresses to liquidate. Troves that were already
+     *                        liquidated, or cannot be liquidated, are ignored.
      */
     /*
      * Attempt to liquidate a custom list of troves provided by the caller.
@@ -290,12 +278,8 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
             if (ICR <= _100pct) {
                 singleLiquidation = _liquidateWithoutSP(troveManager, account);
             } else if (ICR < troveManagerValues.MCR) {
-                singleLiquidation = _liquidateNormalMode(
-                    troveManager,
-                    account,
-                    debtInStabPool,
-                    troveManagerValues.sunsetting
-                );
+                singleLiquidation =
+                    _liquidateNormalMode(troveManager, account, debtInStabPool, troveManagerValues.sunsetting);
                 debtInStabPool -= singleLiquidation.debtToOffset;
             } else {
                 // As soon as we find a trove with ICR >= MCR we need to start tracking the global TCR with the next loop
@@ -322,30 +306,21 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
                 if (ICR <= _100pct) {
                     singleLiquidation = _liquidateWithoutSP(troveManager, account);
                 } else if (ICR < troveManagerValues.MCR) {
-                    singleLiquidation = _liquidateNormalMode(
-                        troveManager,
-                        account,
-                        debtInStabPool,
-                        troveManagerValues.sunsetting
-                    );
+                    singleLiquidation =
+                        _liquidateNormalMode(troveManager, account, debtInStabPool, troveManagerValues.sunsetting);
                 } else {
                     if (troveManagerValues.sunsetting) continue;
                     uint256 TCR = BabelMath._computeCR(entireSystemColl, entireSystemDebt);
                     if (TCR >= CCR || ICR >= TCR) continue;
                     singleLiquidation = _tryLiquidateWithCap(
-                        troveManager,
-                        account,
-                        debtInStabPool,
-                        troveManagerValues.MCR,
-                        troveManagerValues.price
+                        troveManager, account, debtInStabPool, troveManagerValues.MCR, troveManagerValues.price
                     );
                     if (singleLiquidation.debtToOffset == 0) continue;
                 }
 
                 debtInStabPool -= singleLiquidation.debtToOffset;
                 entireSystemColl -=
-                    (singleLiquidation.collToSendToSP + singleLiquidation.collSurplus) *
-                    troveManagerValues.price;
+                    (singleLiquidation.collToSendToSP + singleLiquidation.collSurplus) * troveManagerValues.price;
                 entireSystemDebt -= singleLiquidation.debtToOffset;
                 _applyLiquidationValuesToTotals(totals, singleLiquidation);
                 unchecked {
@@ -359,14 +334,10 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
         if (totals.totalDebtToOffset > 0 || totals.totalCollToSendToSP > 0) {
             // Move liquidated collateral and Debt to the appropriate pools
             stabilityPoolCached.offset(
-                troveManager.collateralToken(),
-                totals.totalDebtToOffset,
-                totals.totalCollToSendToSP
+                troveManager.collateralToken(), totals.totalDebtToOffset, totals.totalCollToSendToSP
             );
             troveManager.decreaseDebtAndSendCollateral(
-                address(stabilityPoolCached),
-                totals.totalDebtToOffset,
-                totals.totalCollToSendToSP
+                address(stabilityPoolCached), totals.totalDebtToOffset, totals.totalCollToSendToSP
             );
         }
         troveManager.finalizeLiquidation(
@@ -387,9 +358,9 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     }
 
     /**
-        @dev Perform a "normal" liquidation, where 100% < ICR < MCR. The trove
-             is liquidated as much as possible using the stability pool. Any
-             remaining debt and collateral are redistributed between active troves.
+     * @dev Perform a "normal" liquidation, where 100% < ICR < MCR. The trove
+     *          is liquidated as much as possible using the stability pool. Any
+     *          remaining debt and collateral are redistributed between active troves.
      */
     function _liquidateNormalMode(
         ITroveManager troveManager,
@@ -400,12 +371,8 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
         uint256 pendingDebtReward;
         uint256 pendingCollReward;
 
-        (
-            singleLiquidation.entireTroveDebt,
-            singleLiquidation.entireTroveColl,
-            pendingDebtReward,
-            pendingCollReward
-        ) = troveManager.getEntireDebtAndColl(_borrower);
+        (singleLiquidation.entireTroveDebt, singleLiquidation.entireTroveColl, pendingDebtReward, pendingCollReward) =
+            troveManager.getEntireDebtAndColl(_borrower);
 
         troveManager.movePendingTroveRewardsToActiveBalances(pendingDebtReward, pendingCollReward);
 
@@ -419,10 +386,7 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
             singleLiquidation.debtToRedistribute,
             singleLiquidation.collToRedistribute
         ) = _getOffsetAndRedistributionVals(
-            singleLiquidation.entireTroveDebt,
-            collToLiquidate,
-            _debtInStabPool,
-            sunsetting
+            singleLiquidation.entireTroveDebt, collToLiquidate, _debtInStabPool, sunsetting
         );
 
         troveManager.closeTroveByLiquidation(_borrower);
@@ -437,11 +401,11 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     }
 
     /**
-        @dev Attempt to liquidate a single trove in recovery mode.
-             If MCR <= ICR < current TCR (accounting for the preceding liquidations in the current sequence)
-             and there is Debt in the Stability Pool, only offset, with no redistribution,
-             but at a capped rate of 1.1 and only if the whole debt can be liquidated.
-             The remainder due to the capped rate will be claimable as collateral surplus.
+     * @dev Attempt to liquidate a single trove in recovery mode.
+     *          If MCR <= ICR < current TCR (accounting for the preceding liquidations in the current sequence)
+     *          and there is Debt in the Stability Pool, only offset, with no redistribution,
+     *          but at a capped rate of 1.1 and only if the whole debt can be liquidated.
+     *          The remainder due to the capped rate will be claimable as collateral surplus.
      */
     function _tryLiquidateWithCap(
         ITroveManager troveManager,
@@ -455,9 +419,8 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
         uint256 pendingDebtReward;
         uint256 pendingCollReward;
 
-        (entireTroveDebt, entireTroveColl, pendingDebtReward, pendingCollReward) = troveManager.getEntireDebtAndColl(
-            _borrower
-        );
+        (entireTroveDebt, entireTroveColl, pendingDebtReward, pendingCollReward) =
+            troveManager.getEntireDebtAndColl(_borrower);
 
         if (entireTroveDebt > _debtInStabPool) {
             // do not liquidate if the entire trove cannot be liquidated via SP
@@ -485,10 +448,7 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
         }
 
         emit TroveLiquidated(
-            _borrower,
-            entireTroveDebt,
-            singleLiquidation.collToSendToSP,
-            TroveManagerOperation.liquidateInRecoveryMode
+            _borrower, entireTroveDebt, singleLiquidation.collToSendToSP, TroveManagerOperation.liquidateInRecoveryMode
         );
         emit TroveUpdated(_borrower, 0, 0, 0, TroveManagerOperation.liquidateInRecoveryMode);
 
@@ -496,22 +456,18 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     }
 
     /**
-        @dev Liquidate a trove without using the stability pool. All debt and collateral
-             are distributed porportionally between the remaining active troves.
+     * @dev Liquidate a trove without using the stability pool. All debt and collateral
+     *          are distributed porportionally between the remaining active troves.
      */
-    function _liquidateWithoutSP(
-        ITroveManager troveManager,
-        address _borrower
-    ) internal returns (LiquidationValues memory singleLiquidation) {
+    function _liquidateWithoutSP(ITroveManager troveManager, address _borrower)
+        internal
+        returns (LiquidationValues memory singleLiquidation)
+    {
         uint256 pendingDebtReward;
         uint256 pendingCollReward;
 
-        (
-            singleLiquidation.entireTroveDebt,
-            singleLiquidation.entireTroveColl,
-            pendingDebtReward,
-            pendingCollReward
-        ) = troveManager.getEntireDebtAndColl(_borrower);
+        (singleLiquidation.entireTroveDebt, singleLiquidation.entireTroveColl, pendingDebtReward, pendingCollReward) =
+            troveManager.getEntireDebtAndColl(_borrower);
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.entireTroveColl);
         singleLiquidation.debtGasCompensation = DEBT_GAS_COMPENSATION;
@@ -520,9 +476,7 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
         singleLiquidation.debtToOffset = 0;
         singleLiquidation.collToSendToSP = 0;
         singleLiquidation.debtToRedistribute = singleLiquidation.entireTroveDebt;
-        singleLiquidation.collToRedistribute =
-            singleLiquidation.entireTroveColl -
-            singleLiquidation.collGasCompensation;
+        singleLiquidation.collToRedistribute = singleLiquidation.entireTroveColl - singleLiquidation.collGasCompensation;
 
         troveManager.closeTroveByLiquidation(_borrower);
         emit TroveLiquidated(
@@ -538,12 +492,7 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     /* In a full liquidation, returns the values for a trove's coll and debt to be offset, and coll and debt to be
      * redistributed to active troves.
      */
-    function _getOffsetAndRedistributionVals(
-        uint256 _debt,
-        uint256 _coll,
-        uint256 _debtInStabPool,
-        bool sunsetting
-    )
+    function _getOffsetAndRedistributionVals(uint256 _debt, uint256 _coll, uint256 _debtInStabPool, bool sunsetting)
         internal
         pure
         returns (uint256 debtToOffset, uint256 collToSendToSP, uint256 debtToRedistribute, uint256 collToRedistribute)
@@ -572,9 +521,9 @@ contract LiquidationManager is ILiquidationManager, BabelBase {
     }
 
     /**
-        @dev Adds values from `singleLiquidation` to `totals`
-             Calling this function mutates `totals`, the change is done in-place
-             to avoid needless expansion of memory
+     * @dev Adds values from `singleLiquidation` to `totals`
+     *          Calling this function mutates `totals`, the change is done in-place
+     *          to avoid needless expansion of memory
      */
     function _applyLiquidationValuesToTotals(
         LiquidationTotals memory totals,

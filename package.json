@@ -13,9 +13,10 @@
     "prettier": "^3.3.3",
     "typechain": "^8.3.2"
   },
-  "scripts": {
-    "format": "prettier --write \"**/*.{js,ts}\""
-  },
+ "scripts": {
+  "format": "prettier --write \"**/*.{js,ts}\" && forge fmt",
+  "format:check": "prettier --check \"**/*.{js,ts}\" && forge fmt --check"
+},
   "dependencies": {
     "dotenv": "^16.4.5"
   }

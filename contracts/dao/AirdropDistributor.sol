@@ -13,12 +13,12 @@ interface IClaimCallback {
 }
 
 /**
-    @title Babel veCRV Airdrop Distributor
-    @notice Distributes BABEL to veCRV holders that voted in favor of
-            Babel's initial Curve governance proposal.
-    @dev Airdropped BABEL tokens are given as a one year locked position.
-         Distribution is via a merkle proof. The proof and script used
-         to create are available on Github: https://github.com/babel-fi
+ * @title Babel veCRV Airdrop Distributor
+ *     @notice Distributes BABEL to veCRV holders that voted in favor of
+ *             Babel's initial Curve governance proposal.
+ *     @dev Airdropped BABEL tokens are given as a one year locked position.
+ *          Distribution is via a merkle proof. The proof and script used
+ *          to create are available on Github: https://github.com/babel-fi
  */
 contract AirdropDistributor is Ownable {
     using Address for address;
@@ -80,15 +80,11 @@ contract AirdropDistributor is Ownable {
     }
 
     /**
-        @dev `amount` is after dividing by `locker.lockToTokenRatio()`
+     * @dev `amount` is after dividing by `locker.lockToTokenRatio()`
      */
-    function claim(
-        address claimant,
-        address receiver,
-        uint256 index,
-        uint256 amount,
-        bytes32[] calldata merkleProof
-    ) external {
+    function claim(address claimant, address receiver, uint256 index, uint256 amount, bytes32[] calldata merkleProof)
+        external
+    {
         if (msg.sender != claimant) {
             require(msg.sender == owner(), "onlyOwner");
             require(claimant.isContract(), "Claimant must be a contract");
@@ -114,8 +110,8 @@ contract AirdropDistributor is Ownable {
     }
 
     /**
-        @notice Set a claim callback contract
-        @dev When set, claims directed to the caller trigger a callback to this address
+     * @notice Set a claim callback contract
+     *     @dev When set, claims directed to the caller trigger a callback to this address
      */
     function setClaimCallback(address _callback) external returns (bool) {
         claimCallback[msg.sender] = _callback;
