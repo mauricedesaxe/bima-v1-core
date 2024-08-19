@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 // vault specific members
 import {IEmissionSchedule} from "../../../contracts/interfaces/IEmissionSchedule.sol";
 import {IBoostCalculator} from "../../../contracts/interfaces/IBoostCalculator.sol";
@@ -92,5 +95,61 @@ contract VaultTest is TestSetup {
 
         // BabelVault::lockWeeks correct
         assertEq(babelVault.lockWeeks(), INIT_VLT_LOCK_WEEKS);
+    }
+
+    // added because I thought the conversion in `transferTokens` was interesting and worth fuzzing
+    function testFuzz_transferTokens(address receiver, uint256 amount) public {
+        vm.assume(receiver != address(0) && receiver != address(babelVault));
+        amount = bound(amount, 0, babelToken.balanceOf(address(babelVault)));
+
+        uint256 initialUnallocated = babelVault.unallocatedTotal();
+        uint256 initialBabelBalance = babelToken.balanceOf(address(babelVault));
+        uint256 initialReceiverBalance = babelToken.balanceOf(receiver);
+
+        vm.prank(users.owner);
+        bool success = babelVault.transferTokens(IERC20(address(babelToken)), receiver, amount);
+
+        assertTrue(success);
+        assertEq(babelVault.unallocatedTotal(), initialUnallocated - amount);
+        assertEq(babelToken.balanceOf(address(babelVault)), initialBabelBalance - amount);
+        assertEq(babelToken.balanceOf(receiver), initialReceiverBalance + amount);
+
+        // Test with non-BabelToken
+        IERC20 mockToken = new ERC20("Mock", "MCK");
+        uint256 mockAmount = 1000 * 10 ** 18;
+        deal(address(mockToken), address(babelVault), mockAmount);
+
+        uint256 initialMockBalance = mockToken.balanceOf(address(babelVault));
+        uint256 initialReceiverMockBalance = mockToken.balanceOf(receiver);
+
+        vm.prank(users.owner);
+        success = babelVault.transferTokens(mockToken, receiver, mockAmount);
+
+        assertTrue(success);
+        assertEq(babelVault.unallocatedTotal(), initialUnallocated - amount); // Unchanged
+        assertEq(mockToken.balanceOf(address(babelVault)), initialMockBalance - mockAmount);
+        assertEq(mockToken.balanceOf(receiver), initialReceiverMockBalance + mockAmount);
+    }
+
+    // added because I thought the conversion in `transferTokens` was interesting and worth fuzzing
+    function testFuzz_transferTokens_revert(address receiver, uint256 amount) public {
+        vm.assume(receiver != address(0));
+        amount = bound(amount, 0, babelToken.balanceOf(address(babelVault)));
+
+        // Test revert on non-owner call
+        vm.prank(users.user1);
+        vm.expectRevert("Only owner");
+        babelVault.transferTokens(IERC20(address(babelToken)), receiver, amount);
+
+        // Test revert on self-transfer
+        vm.prank(users.owner);
+        vm.expectRevert("Self transfer denied");
+        babelVault.transferTokens(IERC20(address(babelToken)), address(babelVault), amount);
+
+        // Test revert on insufficient balance
+        uint256 excessiveAmount = babelToken.balanceOf(address(babelVault)) + 1;
+        vm.prank(users.owner);
+        vm.expectRevert();
+        babelVault.transferTokens(IERC20(address(babelToken)), receiver, excessiveAmount);
     }
 }
