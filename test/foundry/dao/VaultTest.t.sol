@@ -4,6 +4,9 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import {IncentiveVoting} from "../../../contracts/dao/IncentiveVoting.sol";
+import {MockEmissionReceiver} from "../../../contracts/mocks/MockEmissionReceiver.sol";
+
 // vault specific members
 import {IEmissionSchedule} from "../../../contracts/interfaces/IEmissionSchedule.sol";
 import {IBoostCalculator} from "../../../contracts/interfaces/IBoostCalculator.sol";
@@ -151,5 +154,64 @@ contract VaultTest is TestSetup {
         vm.prank(users.owner);
         vm.expectRevert();
         babelVault.transferTokens(IERC20(address(babelToken)), receiver, excessiveAmount);
+    }
+
+    function testFuzz_registerReceiver(address receiver, uint256 count, uint256 weeksToAdd) public {
+        vm.assume(receiver != address(0) && receiver != address(babelVault));
+        vm.assume(uint160(receiver) > 9); // Exclude precompile addresses (0x1 to 0x9)
+        count = bound(count, 1, 100); // Limit count to avoid excessive gas usage or memory issues
+        weeksToAdd = bound(weeksToAdd, 0, type(uint64).max - 1);
+        vm.assume(weeksToAdd <= type(uint64).max - 1);
+
+        // Set up week
+        vm.warp(block.timestamp + weeksToAdd * 1 weeks);
+        uint256 currentWeek = babelVault.getWeek();
+
+        // Mock the IEmissionReceiver interface
+        MockEmissionReceiver mockReceiver = new MockEmissionReceiver();
+        vm.etch(receiver, address(mockReceiver).code);
+
+        // Have owner register receiver
+        vm.prank(users.owner);
+        bool success = babelVault.registerReceiver(receiver, count);
+
+        // Assertions
+        assertTrue(success);
+        for (uint256 i = 1; i <= count; i++) {
+            (address registeredReceiver, bool isActive) = babelVault.idToReceiver(i);
+            assertEq(registeredReceiver, receiver);
+            assertTrue(isActive);
+            assertEq(babelVault.receiverUpdatedWeek(i), uint16(currentWeek));
+        }
+
+        // Verify IncentiveVoting state
+        assertEq(incentiveVoting.receiverCount(), count + 1); // +1 because of the initial StabilityPool receiver
+
+        // Verify MockEmissionReceiver state
+        MockEmissionReceiver(receiver).assertNotifyRegisteredIdCalled(count);
+    }
+
+    function test_registerReceiver_zeroCount() public {
+        vm.prank(users.owner);
+        vm.expectRevert();
+        babelVault.registerReceiver(address(1), 0);
+    }
+
+    function test_registerReceiver_revert_zeroAddress() public {
+        vm.prank(users.owner);
+        vm.expectRevert();
+        babelVault.registerReceiver(address(0), 1);
+    }
+
+    function test_registerReceiver_revert_babelVault() public {
+        vm.prank(users.owner);
+        vm.expectRevert();
+        babelVault.registerReceiver(address(babelVault), 1);
+    }
+
+    function test_registerReceiver_revert_nonOwner() public {
+        vm.prank(users.user1);
+        vm.expectRevert();
+        babelVault.registerReceiver(address(1), 1);
     }
 }
