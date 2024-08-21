@@ -744,7 +744,7 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
     }
 
     function vaultClaimReward(address claimant, address) external returns (uint256 amount) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "StabilityPool: Caller not Vault");
 
         return _claimReward(claimant);
     }

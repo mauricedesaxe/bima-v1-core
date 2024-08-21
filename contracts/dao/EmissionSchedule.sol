@@ -92,7 +92,7 @@ contract EmissionSchedule is IEmissionSchedule, BabelOwnable, SystemStart {
         external
         returns (uint256 amount, uint256 lock)
     {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "EmissionSchedule: Caller not Vault");
 
         // apply the lock week decay
         lock = lockWeeks;

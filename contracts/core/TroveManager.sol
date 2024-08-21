@@ -214,7 +214,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     function setAddresses(address _priceFeedAddress, address _sortedTrovesAddress, address _collateralToken) external {
-        require(address(sortedTroves) == address(0));
+        require(address(sortedTroves) == address(0), "SortedTroves already set");
         priceFeed = IPriceFeed(_priceFeedAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         collateralToken = IERC20(_collateralToken);
@@ -226,7 +226,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     function notifyRegisteredId(uint256[] calldata _assignedIds) external returns (bool) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "TroveManager: Caller not Vault");
         require(emissionId.debt == 0, "Already assigned");
         uint256 length = _assignedIds.length;
         require(length == 2, "Incorrect ID count");
@@ -305,8 +305,14 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
             _minuteDecayFactor >= 977159968434245000 // half-life of 30 minutes
                 && _minuteDecayFactor <= 999931237762985000 // half-life of 1 week
         );
-        require(_redemptionFeeFloor <= _maxRedemptionFee && _maxRedemptionFee <= DECIMAL_PRECISION);
-        require(_borrowingFeeFloor <= _maxBorrowingFee && _maxBorrowingFee <= DECIMAL_PRECISION);
+        require(
+            _redemptionFeeFloor <= _maxRedemptionFee && _maxRedemptionFee <= DECIMAL_PRECISION,
+            "Redemption fee out of bounds"
+        );
+        require(
+            _borrowingFeeFloor <= _maxBorrowingFee && _maxBorrowingFee <= DECIMAL_PRECISION,
+            "Borrowing fee out of bounds"
+        );
 
         _decayBaseRate();
 
@@ -815,7 +821,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     function vaultClaimReward(address claimant, address) external returns (uint256) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "TroveManager: Caller not Vault");
 
         return _claimReward(claimant);
     }

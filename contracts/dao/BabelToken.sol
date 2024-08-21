@@ -54,8 +54,8 @@ contract BabelToken is OFT, IERC2612 {
     }
 
     function mintToVault(uint256 _totalSupply) external returns (bool) {
-        require(msg.sender == vault);
-        require(maxTotalSupply == 0);
+        require(msg.sender == vault, "BabelToken: Caller not Vault");
+        require(maxTotalSupply == 0, "BabelToken: Max total supply is already set");
 
         _mint(vault, _totalSupply);
         maxTotalSupply = _totalSupply;

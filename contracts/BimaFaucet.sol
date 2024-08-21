@@ -11,7 +11,7 @@ contract BimaFaucet is Ownable {
     mapping(address => mapping(address => uint256)) public tokensRecievedAt; // account => token => timestamp
 
     function getTokens(address _tokenAddress) external {
-        require(tokensRecievedAt[msg.sender][_tokenAddress] + INTERVAL < block.timestamp);
+        require(tokensRecievedAt[msg.sender][_tokenAddress] + INTERVAL < block.timestamp, "Not enough time has passed");
 
         IERC20(_tokenAddress).transfer(msg.sender, tokenAmount);
 
@@ -23,7 +23,7 @@ contract BimaFaucet is Ownable {
     }
 
     function updateTokenAmount(uint256 _newTokenAmount) external onlyOwner {
-        require(_newTokenAmount > 0);
+        require(_newTokenAmount > 0, "Token amount must be greater than 0");
         tokenAmount = _newTokenAmount;
     }
 }

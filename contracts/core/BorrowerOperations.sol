@@ -77,7 +77,7 @@ contract BorrowerOperations is IBorrowerOperations, BabelBase, BabelOwnable, Del
     }
 
     function _setMinNetDebt(uint256 _minNetDebt) internal {
-        require(_minNetDebt > 0);
+        require(_minNetDebt > 0, "Min net debt must be greater than 0");
         minNetDebt = _minNetDebt;
     }
 

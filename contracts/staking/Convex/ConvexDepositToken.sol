@@ -111,7 +111,7 @@ contract ConvexDepositToken {
     }
 
     function notifyRegisteredId(uint256[] memory assignedIds) external returns (bool) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "ConvexDepositToken: Caller not Vault");
         require(emissionId == 0, "Already registered");
         require(assignedIds.length == 1, "Incorrect ID count");
         emissionId = assignedIds[0];
@@ -181,7 +181,7 @@ contract ConvexDepositToken {
     }
 
     function vaultClaimReward(address claimant, address receiver) external returns (uint256) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "ConvexDepositToken: Caller not Vault");
         uint128[3] memory amounts = _claimReward(claimant, receiver);
 
         emit RewardClaimed(claimant, 0, amounts[1], amounts[2]);
