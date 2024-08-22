@@ -5,7 +5,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {ITroveManager, IDebtToken, IBabelVault, IPriceFeed, ISortedTroves, IERC20} from "../interfaces/ITroveManager.sol";
+import {
+    ITroveManager, IDebtToken, IBabelVault, IPriceFeed, ISortedTroves, IERC20
+} from "../interfaces/ITroveManager.sol";
 import {SystemStart} from "../dependencies/SystemStart.sol";
 import {BabelBase} from "../dependencies/BabelBase.sol";
 import {BabelMath} from "../dependencies/BabelMath.sol";
@@ -14,17 +16,18 @@ import {BabelOwnable} from "../dependencies/BabelOwnable.sol";
 // todo: remove before production
 import {console} from "hardhat/console.sol";
 /**
-    @title Babel Trove Manager
-    @notice Based on Liquity's `TroveManager`
-            https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
-
-            Babel's implementation is modified so that multiple `TroveManager` and `SortedTroves`
-            contracts are deployed in tandem, with each pair managing troves of a single collateral
-            type.
-
-            Functionality related to liquidations has been moved to `LiquidationManager`. This was
-            necessary to avoid the restriction on deployed bytecode size.
+ * @title Babel Trove Manager
+ *     @notice Based on Liquity's `TroveManager`
+ *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
+ *
+ *             Babel's implementation is modified so that multiple `TroveManager` and `SortedTroves`
+ *             contracts are deployed in tandem, with each pair managing troves of a single collateral
+ *             type.
+ *
+ *             Functionality related to liquidations has been moved to `LiquidationManager`. This was
+ *             necessary to avoid the restriction on deployed bytecode size.
  */
+
 contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     using SafeERC20 for IERC20;
 
@@ -211,7 +214,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     function setAddresses(address _priceFeedAddress, address _sortedTrovesAddress, address _collateralToken) external {
-        require(address(sortedTroves) == address(0));
+        require(address(sortedTroves) == address(0), "SortedTroves already set");
         priceFeed = IPriceFeed(_priceFeedAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         collateralToken = IERC20(_collateralToken);
@@ -223,11 +226,11 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     function notifyRegisteredId(uint256[] calldata _assignedIds) external returns (bool) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "TroveManager: Caller not Vault");
         require(emissionId.debt == 0, "Already assigned");
         uint256 length = _assignedIds.length;
         require(length == 2, "Incorrect ID count");
-        emissionId = EmissionId({ debt: uint16(_assignedIds[0]), minting: uint16(_assignedIds[1]) });
+        emissionId = EmissionId({debt: uint16(_assignedIds[0]), minting: uint16(_assignedIds[1])});
         periodFinish = uint32(((block.timestamp / 1 weeks) + 1) * 1 weeks);
 
         return true;
@@ -257,12 +260,12 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     /**
      * @notice Starts sunsetting a collateral
      *         During sunsetting only the following are possible:
-               1) Disable collateral handoff to SP
-               2) Greatly Increase interest rate to incentivize redemptions
-               3) Remove redemptions fees
-               4) Disable new loans
-        @dev IMPORTANT: When sunsetting a collateral altogether this function should be called on
-                        all TM linked to that collateral as well as `StabilityPool.startCollateralSunset`
+     *            1) Disable collateral handoff to SP
+     *            2) Greatly Increase interest rate to incentivize redemptions
+     *            3) Remove redemptions fees
+     *            4) Disable new loans
+     *     @dev IMPORTANT: When sunsetting a collateral altogether this function should be called on
+     *                     all TM linked to that collateral as well as `StabilityPool.startCollateralSunset`
      */
     function startSunset() external onlyOwner {
         sunsetting = true;
@@ -299,11 +302,17 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
             require(msg.sender == owner(), "Only owner");
         }
         require(
-            _minuteDecayFactor >= 977159968434245000 && // half-life of 30 minutes
-                _minuteDecayFactor <= 999931237762985000 // half-life of 1 week
+            _minuteDecayFactor >= 977159968434245000 // half-life of 30 minutes
+                && _minuteDecayFactor <= 999931237762985000 // half-life of 1 week
         );
-        require(_redemptionFeeFloor <= _maxRedemptionFee && _maxRedemptionFee <= DECIMAL_PRECISION);
-        require(_borrowingFeeFloor <= _maxBorrowingFee && _maxBorrowingFee <= DECIMAL_PRECISION);
+        require(
+            _redemptionFeeFloor <= _maxRedemptionFee && _maxRedemptionFee <= DECIMAL_PRECISION,
+            "Redemption fee out of bounds"
+        );
+        require(
+            _borrowingFeeFloor <= _maxBorrowingFee && _maxBorrowingFee <= DECIMAL_PRECISION,
+            "Borrowing fee out of bounds"
+        );
 
         _decayBaseRate();
 
@@ -371,21 +380,23 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get the current total collateral and debt amounts for a trove
-        @dev Also includes pending rewards from redistribution
+     * @notice Get the current total collateral and debt amounts for a trove
+     *     @dev Also includes pending rewards from redistribution
      */
     function getTroveCollAndDebt(address _borrower) public view returns (uint256 coll, uint256 debt) {
-        (debt, coll, , ) = getEntireDebtAndColl(_borrower);
+        (debt, coll,,) = getEntireDebtAndColl(_borrower);
         return (coll, debt);
     }
 
     /**
-        @notice Get the total and pending collateral and debt amounts for a trove
-        @dev Used by the liquidation manager
+     * @notice Get the total and pending collateral and debt amounts for a trove
+     *     @dev Used by the liquidation manager
      */
-    function getEntireDebtAndColl(
-        address _borrower
-    ) public view returns (uint256 debt, uint256 coll, uint256 pendingDebtReward, uint256 pendingCollateralReward) {
+    function getEntireDebtAndColl(address _borrower)
+        public
+        view
+        returns (uint256 debt, uint256 coll, uint256 pendingDebtReward, uint256 pendingCollateralReward)
+    {
         Trove storage t = Troves[_borrower];
         debt = t.debt;
         coll = t.coll;
@@ -394,7 +405,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
         // Accrued trove interest for correct liquidation values. This assumes the index to be updated.
         uint256 troveInterestIndex = t.activeInterestIndex;
         if (troveInterestIndex > 0) {
-            (uint256 currentIndex, ) = _calculateInterestIndex();
+            (uint256 currentIndex,) = _calculateInterestIndex();
             debt = (debt * currentIndex) / troveInterestIndex;
         }
 
@@ -486,11 +497,10 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
      * then,
      * 2) increases the baseRate based on the amount redeemed, as a proportion of total supply
      */
-    function _updateBaseRateFromRedemption(
-        uint256 _collateralDrawn,
-        uint256 _price,
-        uint256 _totalDebtSupply
-    ) internal returns (uint256) {
+    function _updateBaseRateFromRedemption(uint256 _collateralDrawn, uint256 _price, uint256 _totalDebtSupply)
+        internal
+        returns (uint256)
+    {
         uint256 decayedBaseRate = _calcDecayedBaseRate();
 
         /* Convert the drawn collateral back to debt at face value rate (1 debt:1 USD), in order to get
@@ -518,11 +528,10 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     function _calcRedemptionRate(uint256 _baseRate) internal view returns (uint256) {
-        return
-            BabelMath._min(
-                redemptionFeeFloor + _baseRate,
-                maxRedemptionFee // cap at a maximum of 100%
-            );
+        return BabelMath._min(
+            redemptionFeeFloor + _baseRate,
+            maxRedemptionFee // cap at a maximum of 100%
+        );
     }
 
     function getRedemptionFeeWithDecay(uint256 _collateralDrawn) external view returns (uint256) {
@@ -616,8 +625,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
         RedemptionTotals memory totals;
 
         require(
-            _maxFeePercentage >= redemptionFeeFloor && _maxFeePercentage <= maxRedemptionFee,
-            "Max fee 0.5% to 100%"
+            _maxFeePercentage >= redemptionFeeFloor && _maxFeePercentage <= maxRedemptionFee, "Max fee 0.5% to 100%"
         );
         require(block.timestamp >= systemDeploymentTime + BOOTSTRAP_PERIOD, "BOOTSTRAP_PERIOD");
         totals.price = fetchPrice();
@@ -736,8 +744,8 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
                     ? _partialRedemptionHintNICR - newNICR
                     : newNICR - _partialRedemptionHintNICR;
                 if (
-                    icrError > 5e14 ||
-                    _getNetDebt(newDebt) < IBorrowerOperations(borrowerOperationsAddress).minNetDebt()
+                    icrError > 5e14
+                        || _getNetDebt(newDebt) < IBorrowerOperations(borrowerOperationsAddress).minNetDebt()
                 ) {
                     singleRedemption.cancelledPartial = true;
                     return singleRedemption;
@@ -778,9 +786,8 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
         uint256 _MCR
     ) internal view returns (bool) {
         if (
-            _firstRedemptionHint == address(0) ||
-            !_sortedTroves.contains(_firstRedemptionHint) ||
-            getCurrentICR(_firstRedemptionHint, _price) < _MCR
+            _firstRedemptionHint == address(0) || !_sortedTroves.contains(_firstRedemptionHint)
+                || getCurrentICR(_firstRedemptionHint, _price) < _MCR
         ) {
             return false;
         }
@@ -814,7 +821,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     function vaultClaimReward(address claimant, address) external returns (uint256) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "TroveManager: Caller not Vault");
 
         return _claimReward(claimant);
     }
@@ -1039,10 +1046,10 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
     }
 
     /**
-        @dev Only called from `closeTrove` because liquidating the final trove is blocked in
-             `LiquidationManager`. Many liquidation paths involve redistributing debt and
-             collateral to existing troves. If the collateral is being sunset, the final trove
-             must be closed by repaying the debt or via a redemption.
+     * @dev Only called from `closeTrove` because liquidating the final trove is blocked in
+     *          `LiquidationManager`. Many liquidation paths involve redistributing debt and
+     *          collateral to existing troves. If the collateral is being sunset, the final trove
+     *          must be closed by repaying the debt or via a redemption.
      */
     function _resetState() private {
         if (TroveOwners.length == 0) {
@@ -1104,7 +1111,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
                 uint256 pending = (dailyMintReward[data.week] * data.amount) / totalMints[data.week][data.day];
                 storedPendingReward[account] += pending;
             }
-            accountLatestMint[account] = VolumeData({ week: uint32(week), day: uint32(day), amount: amount });
+            accountLatestMint[account] = VolumeData({week: uint32(week), day: uint32(day), amount: amount});
         }
     }
 
@@ -1380,8 +1387,7 @@ contract TroveManager is ITroveManager, BabelBase, BabelOwnable, SystemStart {
             uint256 deltaT = block.timestamp - lastIndexUpdateCached;
             interestFactor = deltaT * currentInterest;
             currentInterestIndex =
-                currentInterestIndex +
-                Math.mulDiv(currentInterestIndex, interestFactor, INTEREST_PRECISION);
+                currentInterestIndex + Math.mulDiv(currentInterestIndex, interestFactor, INTEREST_PRECISION);
         }
     }
 

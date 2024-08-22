@@ -18,8 +18,8 @@ contract TroveManagerGetters {
     }
 
     /**
-        @notice Returns all active system trove managers and collaterals, as an
-        `       array of tuples of [(collateral, [troveManager, ...]), ...]
+     * @notice Returns all active system trove managers and collaterals, as an
+     *     `       array of tuples of [(collateral, [troveManager, ...]), ...]
      */
     function getAllCollateralsAndTroveManagers() external view returns (Collateral[] memory) {
         uint256 length = factory.troveManagerCount();
@@ -60,7 +60,7 @@ contract TroveManagerGetters {
     }
 
     /**
-        @notice Returns a list of trove managers where `account` has an existing trove
+     * @notice Returns a list of trove managers where `account` has an existing trove
      */
     function getActiveTroveManagersForAccount(address account) external view returns (address[] memory) {
         uint256 length = factory.troveManagerCount();

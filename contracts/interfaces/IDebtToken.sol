@@ -31,7 +31,8 @@ interface IDebtToken {
 
     function increaseAllowance(address spender, uint256 addedValue) external returns (bool);
 
-    function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) external;
+    function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload)
+        external;
 
     function mint(address _account, uint256 _amount) external;
 
@@ -44,15 +45,8 @@ interface IDebtToken {
         bytes calldata _payload
     ) external;
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+    function permit(address owner, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
 
     function renounceOwnership() external;
 
@@ -84,12 +78,9 @@ interface IDebtToken {
 
     function transferOwnership(address newOwner) external;
 
-    function retryMessage(
-        uint16 _srcChainId,
-        bytes calldata _srcAddress,
-        uint64 _nonce,
-        bytes calldata _payload
-    ) external payable;
+    function retryMessage(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload)
+        external
+        payable;
 
     function sendFrom(
         address _from,
@@ -139,12 +130,10 @@ interface IDebtToken {
 
     function gasPool() external view returns (address);
 
-    function getConfig(
-        uint16 _version,
-        uint16 _chainId,
-        address,
-        uint256 _configType
-    ) external view returns (bytes memory);
+    function getConfig(uint16 _version, uint16 _chainId, address, uint256 _configType)
+        external
+        view
+        returns (bytes memory);
 
     function getTrustedRemoteAddress(uint16 _remoteChainId) external view returns (bytes memory);
 

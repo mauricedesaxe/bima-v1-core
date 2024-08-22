@@ -9,9 +9,7 @@ import {BabelOwnable} from "../../dependencies/BabelOwnable.sol";
 interface IBooster {
     function deposit(uint256 _pid, uint256 _amount, bool _stake) external returns (bool);
 
-    function poolInfo(
-        uint256 _pid
-    )
+    function poolInfo(uint256 _pid)
         external
         view
         returns (address lpToken, address token, address gauge, address crvRewards, address stash, bool shutdown);
@@ -30,10 +28,10 @@ interface IConvexStash {
 }
 
 /**
-    @title Babel Convex Deposit Wrapper
-    @notice Standard ERC20 interface around a deposit of a Curve LP token into Convex.
-            Tokens are minted by depositing Curve LP tokens, and burned to receive the LP
-            tokens back. Holders may claim BABEL emissions on top of the earned CRV and CVX.
+ * @title Babel Convex Deposit Wrapper
+ *     @notice Standard ERC20 interface around a deposit of a Curve LP token into Convex.
+ *             Tokens are minted by depositing Curve LP tokens, and burned to receive the LP
+ *             tokens back. Holders may claim BABEL emissions on top of the earned CRV and CVX.
  */
 contract ConvexDepositToken {
     IERC20 public immutable BABEL;
@@ -93,7 +91,7 @@ contract ConvexDepositToken {
 
     function initialize(uint256 pid) external {
         require(address(lpToken) == address(0), "Already initialized");
-        (address _lpToken, , , address _crvRewards, address _stash, ) = booster.poolInfo(pid);
+        (address _lpToken,,, address _crvRewards, address _stash,) = booster.poolInfo(pid);
 
         depositPid = pid;
         lpToken = IERC20(_lpToken);
@@ -113,7 +111,7 @@ contract ConvexDepositToken {
     }
 
     function notifyRegisteredId(uint256[] memory assignedIds) external returns (bool) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "ConvexDepositToken: Caller not Vault");
         require(emissionId == 0, "Already registered");
         require(assignedIds.length == 1, "Incorrect ID count");
         emissionId = assignedIds[0];
@@ -171,9 +169,10 @@ contract ConvexDepositToken {
         return amounts;
     }
 
-    function claimReward(
-        address receiver
-    ) external returns (uint256 babelAmount, uint256 crvAmount, uint256 cvxAmount) {
+    function claimReward(address receiver)
+        external
+        returns (uint256 babelAmount, uint256 crvAmount, uint256 cvxAmount)
+    {
         uint128[3] memory amounts = _claimReward(msg.sender, receiver);
         vault.transferAllocatedTokens(msg.sender, receiver, amounts[0]);
 
@@ -182,16 +181,18 @@ contract ConvexDepositToken {
     }
 
     function vaultClaimReward(address claimant, address receiver) external returns (uint256) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "ConvexDepositToken: Caller not Vault");
         uint128[3] memory amounts = _claimReward(claimant, receiver);
 
         emit RewardClaimed(claimant, 0, amounts[1], amounts[2]);
         return amounts[0];
     }
 
-    function claimableReward(
-        address account
-    ) external view returns (uint256 babelAmount, uint256 crvAmount, uint256 cvxAmount) {
+    function claimableReward(address account)
+        external
+        view
+        returns (uint256 babelAmount, uint256 crvAmount, uint256 cvxAmount)
+    {
         uint256 updated = periodFinish;
         if (updated > block.timestamp) updated = block.timestamp;
         uint256 duration = updated - lastUpdate;

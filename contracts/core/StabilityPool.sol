@@ -8,12 +8,12 @@ import {BabelMath} from "../dependencies/BabelMath.sol";
 import {IStabilityPool, IDebtToken, IBabelVault, IERC20} from "../interfaces/IStabilityPool.sol";
 
 /**
-    @title Babel Stability Pool
-    @notice Based on Liquity's `StabilityPool`
-            https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
-
-            Babel's implementation is modified to support multiple collaterals. Deposits into
-            the stability pool may be used to liquidate any supported collateral type.
+ * @title Babel Stability Pool
+ *     @notice Based on Liquity's `StabilityPool`
+ *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
+ *
+ *             Babel's implementation is modified to support multiple collaterals. Deposits into
+ *             the stability pool may be used to liquidate any supported collateral type.
  */
 contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
     using SafeERC20 for IERC20;
@@ -111,6 +111,7 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
         uint128 idx;
         uint128 expiry;
     }
+
     struct Queue {
         uint16 firstSunsetIndexKey;
         uint16 nextSunsetIndexKey;
@@ -164,8 +165,8 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
         require(idx < length, "Index too large");
         uint256 externalLoopEnd = currentEpoch;
         uint256 internalLoopEnd = currentScale;
-        for (uint128 i; i <= externalLoopEnd; ) {
-            for (uint128 j; j <= internalLoopEnd; ) {
+        for (uint128 i; i <= externalLoopEnd;) {
+            for (uint128 j; j <= internalLoopEnd;) {
                 epochToScaleToSums[i][j][idx] = 0;
                 unchecked {
                     ++j;
@@ -183,17 +184,14 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
     /**
      * @notice Starts sunsetting a collateral
      *         During sunsetting liquidated collateral handoff to the SP will revert
-        @dev IMPORTANT: When sunsetting a collateral, `TroveManager.startSunset`
-                        should be called on all TM linked to that collateral
-        @param collateral Collateral to sunset
-
+     *     @dev IMPORTANT: When sunsetting a collateral, `TroveManager.startSunset`
+     *                     should be called on all TM linked to that collateral
+     *     @param collateral Collateral to sunset
      */
     function startCollateralSunset(IERC20 collateral) external onlyOwner {
         require(indexByCollateral[collateral] > 0, "Collateral already sunsetting");
-        _sunsetIndexes[queue.nextSunsetIndexKey++] = SunsetIndex(
-            uint128(indexByCollateral[collateral] - 1),
-            uint128(block.timestamp + SUNSET_DURATION)
-        );
+        _sunsetIndexes[queue.nextSunsetIndexKey++] =
+            SunsetIndex(uint128(indexByCollateral[collateral] - 1), uint128(block.timestamp + SUNSET_DURATION));
         delete indexByCollateral[collateral]; //This will prevent calls to the SP in case of liquidations
     }
 
@@ -229,10 +227,7 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
         emit StabilityPoolDebtBalanceUpdated(newTotalDebtTokenDeposits);
 
         uint256 newDeposit = compoundedDebtDeposit + _amount;
-        accountDeposits[msg.sender] = AccountDeposit({
-            amount: uint128(newDeposit),
-            timestamp: uint128(block.timestamp)
-        });
+        accountDeposits[msg.sender] = AccountDeposit({amount: uint128(newDeposit), timestamp: uint128(block.timestamp)});
 
         _updateSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
@@ -270,7 +265,7 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
 
         // Update deposit
         uint256 newDeposit = compoundedDebtDeposit - debtToWithdraw;
-        accountDeposits[msg.sender] = AccountDeposit({ amount: uint128(newDeposit), timestamp: depositTimestamp });
+        accountDeposits[msg.sender] = AccountDeposit({amount: uint128(newDeposit), timestamp: depositTimestamp});
 
         _updateSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
@@ -332,10 +327,10 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
         emit G_Updated(newG, currentEpochCached, currentScaleCached);
     }
 
-    function _computeBabelPerUnitStaked(
-        uint256 _babelIssuance,
-        uint256 _totalDebtTokenDeposits
-    ) internal returns (uint256) {
+    function _computeBabelPerUnitStaked(uint256 _babelIssuance, uint256 _totalDebtTokenDeposits)
+        internal
+        returns (uint256)
+    {
         /*
          * Calculate the Babel-per-unit staked.  Division uses a "feedback" error correction, to keep the
          * cumulative error low in the running total G:
@@ -376,11 +371,8 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
 
         _triggerRewardIssuance();
 
-        (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) = _computeRewardsPerUnitStaked(
-            _collToAdd,
-            _debtToOffset,
-            totalDebt
-        );
+        (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) =
+            _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalDebt);
 
         _updateRewardSumAndProduct(collateralGainPerUnitStaked, debtLossPerUnitStaked, idx); // updates S and P
 
@@ -390,11 +382,10 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
 
     // --- Offset helper functions ---
 
-    function _computeRewardsPerUnitStaked(
-        uint256 _collToAdd,
-        uint256 _debtToOffset,
-        uint256 _totalDebtTokenDeposits
-    ) internal returns (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) {
+    function _computeRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalDebtTokenDeposits)
+        internal
+        returns (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked)
+    {
         /*
          * Compute the Debt and collateral rewards. Uses a "feedback" error correction, to keep
          * the cumulative error in the P and S state variables low:
@@ -538,9 +529,8 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
             hasGains = true;
             uint256 firstPortion = sums[i] - depSums[i];
             uint256 secondPortion = nextSums[i] / SCALE_FACTOR;
-            depositorGains[i] += uint80(
-                (initialDeposit * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION
-            );
+            depositorGains[i] +=
+                uint80((initialDeposit * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION);
         }
         return (hasGains);
     }
@@ -589,10 +579,11 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
         return _getBabelGainFromSnapshots(initialDeposit, snapshots);
     }
 
-    function _getBabelGainFromSnapshots(
-        uint256 initialStake,
-        Snapshots memory snapshots
-    ) internal view returns (uint256) {
+    function _getBabelGainFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
+        internal
+        view
+        returns (uint256)
+    {
         /*
          * Grab the sum 'G' from the epoch at which the stake was made. The Babel gain may span up to one scale change.
          * If it does, the second portion of the Babel gain is scaled by 1e9.
@@ -630,10 +621,11 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
     }
 
     // Internal function, used to calculcate compounded deposits and compounded front end stakes.
-    function _getCompoundedStakeFromSnapshots(
-        uint256 initialStake,
-        Snapshots memory snapshots
-    ) internal view returns (uint256) {
+    function _getCompoundedStakeFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 snapshot_P = snapshots.P;
         uint128 scaleSnapshot = snapshots.scale;
         uint128 epochSnapshot = snapshots.epoch;
@@ -685,7 +677,7 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
         uint256[] memory collateralGains = new uint256[](collateralTokens.length);
 
         uint80[256] storage depositorGains = collateralGainsByDepositor[msg.sender];
-        for (uint256 i; i < loopEnd; ) {
+        for (uint256 i; i < loopEnd;) {
             uint256 collateralIndex = collateralIndexes[i];
             uint256 gains = depositorGains[collateralIndex];
             if (gains > 0) {
@@ -752,7 +744,7 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
     }
 
     function vaultClaimReward(address claimant, address) external returns (uint256 amount) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "StabilityPool: Caller not Vault");
 
         return _claimReward(claimant);
     }
@@ -773,7 +765,7 @@ contract StabilityPool is IStabilityPool, BabelOwnable, SystemStart {
             if (debtLoss > 0 || hasGains || amount > 0) {
                 // Update deposit
                 uint256 newDeposit = compoundedDebtDeposit;
-                accountDeposits[account] = AccountDeposit({ amount: uint128(newDeposit), timestamp: depositTimestamp });
+                accountDeposits[account] = AccountDeposit({amount: uint128(newDeposit), timestamp: depositTimestamp});
                 _updateSnapshots(account, newDeposit);
             }
         }

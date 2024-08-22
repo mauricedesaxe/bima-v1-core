@@ -4,10 +4,11 @@ pragma solidity 0.8.19;
 import {IERC2612} from "../interfaces/IERC2612.sol";
 import {OFT, IERC20, ERC20} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
 /**
-    @title Babel Governance Token
-    @notice Given as an incentive for users of the protocol. Can be locked in `TokenLocker`
-            to receive lock weight, which gives governance power within the Babel DAO.
+ * @title Babel Governance Token
+ *     @notice Given as an incentive for users of the protocol. Can be locked in `TokenLocker`
+ *             to receive lock weight, which gives governance power within the Babel DAO.
  */
+
 contract BabelToken is OFT, IERC2612 {
     // --- ERC20 Data ---
 
@@ -53,8 +54,8 @@ contract BabelToken is OFT, IERC2612 {
     }
 
     function mintToVault(uint256 _totalSupply) external returns (bool) {
-        require(msg.sender == vault);
-        require(maxTotalSupply == 0);
+        require(msg.sender == vault, "BabelToken: Caller not Vault");
+        require(maxTotalSupply == 0, "BabelToken: Max total supply is already set");
 
         _mint(vault, _totalSupply);
         maxTotalSupply = _totalSupply;
@@ -72,15 +73,10 @@ contract BabelToken is OFT, IERC2612 {
         }
     }
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external override {
+    function permit(address owner, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+        override
+    {
         require(deadline >= block.timestamp, "BABEL: expired deadline");
         bytes32 digest = keccak256(
             abi.encodePacked(

@@ -9,8 +9,8 @@ interface IConvexDepositToken {
 }
 
 /**
-    @notice Babel Convex Factory
-    @title Deploys clones of `ConvexDepositToken` as directed by the Babel DAO
+ * @notice Babel Convex Factory
+ *     @title Deploys clones of `ConvexDepositToken` as directed by the Babel DAO
  */
 contract ConvexFactory is BabelOwnable {
     using Clones for address;
@@ -24,8 +24,8 @@ contract ConvexFactory is BabelOwnable {
     }
 
     /**
-        @dev After calling this function, the owner should also call `Vault.registerReceiver`
-             to enable BABEL emissions on the newly deployed `ConvexDepositToken`
+     * @dev After calling this function, the owner should also call `Vault.registerReceiver`
+     *          to enable BABEL emissions on the newly deployed `ConvexDepositToken`
      */
     function deployNewInstance(uint256 pid) external onlyOwner {
         address depositToken = depositTokenImpl.cloneDeterministic(bytes32(pid));

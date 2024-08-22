@@ -5,8 +5,8 @@ import {ISystemStart} from "../interfaces/ISystemStart.sol";
 import {IBabelCore} from "../interfaces/IBabelCore.sol";
 
 /**
-    @title Babel System Start Time
-    @dev Provides a unified `startTime` and `getWeek`, used for emissions.
+ * @title Babel System Start Time
+ *     @dev Provides a unified `startTime` and `getWeek`, used for emissions.
  */
 contract SystemStart is ISystemStart {
     uint256 immutable startTime;

@@ -11,16 +11,13 @@ interface IEmissionSchedule is IBabelOwnable, ISystemStart {
     event LockParametersSet(uint256 lockWeeks, uint256 lockDecayWeeks);
     event WeeklyPctScheduleSet(uint64[2][] schedule);
 
-    function getReceiverWeeklyEmissions(
-        uint256 id,
-        uint256 week,
-        uint256 totalWeeklyEmissions
-    ) external returns (uint256);
+    function getReceiverWeeklyEmissions(uint256 id, uint256 week, uint256 totalWeeklyEmissions)
+        external
+        returns (uint256);
 
-    function getTotalWeeklyEmissions(
-        uint256 week,
-        uint256 unallocatedTotal
-    ) external returns (uint256 amount, uint256 lock);
+    function getTotalWeeklyEmissions(uint256 week, uint256 unallocatedTotal)
+        external
+        returns (uint256 amount, uint256 lock);
 
     function setLockParameters(uint64 _lockWeeks, uint64 _lockDecayWeeks) external returns (bool);
 

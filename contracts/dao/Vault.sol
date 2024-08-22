@@ -5,18 +5,28 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {BabelOwnable} from "../dependencies/BabelOwnable.sol";
 import {SystemStart} from "../dependencies/SystemStart.sol";
-import {IBabelVault, ITokenLocker, IBabelToken, IIncentiveVoting, IEmissionSchedule, IBoostDelegate, IBoostCalculator, IRewards, IERC20} from "../interfaces/IVault.sol";
+import {
+    IBabelVault,
+    ITokenLocker,
+    IBabelToken,
+    IIncentiveVoting,
+    IEmissionSchedule,
+    IBoostDelegate,
+    IBoostCalculator,
+    IRewards,
+    IERC20
+} from "../interfaces/IVault.sol";
 
 interface IEmissionReceiver {
     function notifyRegisteredId(uint256[] memory assignedIds) external returns (bool);
 }
 
 /**
-    @title Babel Vault
-    @notice The total supply of BABEL is initially minted to this contract.
-            The token balance held here can be considered "uncirculating". The
-            vault gradually releases tokens to registered emissions receivers
-            as determined by `EmissionSchedule` and `BoostCalculator`.
+ * @title Babel Vault
+ *     @notice The total supply of BABEL is initially minted to this contract.
+ *             The token balance held here can be considered "uncirculating". The
+ *             vault gradually releases tokens to registered emissions receivers
+ *             as determined by `EmissionSchedule` and `BoostCalculator`.
  */
 contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     using Address for address;
@@ -88,7 +98,7 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
 
         // ensure the stability pool is registered with receiver ID 0
         _voter.registerNewReceiver();
-        idToReceiver[0] = Receiver({ account: _stabilityPool, isActive: true });
+        idToReceiver[0] = Receiver({account: _stabilityPool, isActive: true});
         emit NewReceiverRegistered(_stabilityPool, 0);
     }
 
@@ -137,11 +147,11 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Register a new emission receiver
-        @dev Once this function is called, the receiver ID is immediately
-             eligible for votes within `IncentiveVoting`
-        @param receiver Address of the receiver
-        @param count Number of IDs to assign to the receiver
+     * @notice Register a new emission receiver
+     *     @dev Once this function is called, the receiver ID is immediately
+     *          eligible for votes within `IncentiveVoting`
+     *     @param receiver Address of the receiver
+     *     @param count Number of IDs to assign to the receiver
      */
     function registerReceiver(address receiver, uint256 count) external onlyOwner returns (bool) {
         uint256[] memory assignedIds = new uint256[](count);
@@ -150,7 +160,7 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
             uint256 id = voter.registerNewReceiver();
             assignedIds[i] = id;
             receiverUpdatedWeek[id] = week;
-            idToReceiver[id] = Receiver({ account: receiver, isActive: true });
+            idToReceiver[id] = Receiver({account: receiver, isActive: true});
             emit NewReceiverRegistered(receiver, id);
         }
         // notify the receiver contract of the newly registered ID
@@ -161,12 +171,12 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Modify the active status of an existing receiver
-        @dev Emissions directed to an inactive receiver are instead returned to
-             the unallocated supply. This way potential emissions are not lost
-             due to old emissions votes pointing at a receiver that was phased out.
-        @param id ID of the receiver to modify the isActive status for
-        @param isActive is this receiver eligible to receive emissions?
+     * @notice Modify the active status of an existing receiver
+     *     @dev Emissions directed to an inactive receiver are instead returned to
+     *          the unallocated supply. This way potential emissions are not lost
+     *          due to old emissions votes pointing at a receiver that was phased out.
+     *     @param id ID of the receiver to modify the isActive status for
+     *     @param isActive is this receiver eligible to receive emissions?
      */
     function setReceiverIsActive(uint256 id, bool isActive) external onlyOwner returns (bool) {
         Receiver memory receiver = idToReceiver[id];
@@ -179,9 +189,9 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Set the `emissionSchedule` contract
-        @dev Callable only by the owner (the DAO admin voter, to change the emission schedule).
-             The new schedule is applied from the start of the next epoch.
+     * @notice Set the `emissionSchedule` contract
+     *     @dev Callable only by the owner (the DAO admin voter, to change the emission schedule).
+     *          The new schedule is applied from the start of the next epoch.
      */
     function setEmissionSchedule(IEmissionSchedule _emissionSchedule) external onlyOwner returns (bool) {
         _allocateTotalWeekly(emissionSchedule, getWeek());
@@ -199,7 +209,7 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Transfer tokens out of the vault
+     * @notice Transfer tokens out of the vault
      */
     function transferTokens(IERC20 token, address receiver, uint256 amount) external onlyOwner returns (bool) {
         if (address(token) == address(babelToken)) {
@@ -214,7 +224,7 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Receive BABEL tokens and add them to the unallocated supply
+     * @notice Receive BABEL tokens and add them to the unallocated supply
      */
     function increaseUnallocatedSupply(uint256 amount) external returns (bool) {
         babelToken.transferFrom(msg.sender, address(this), amount);
@@ -252,11 +262,11 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Allocate additional `babelToken` allowance to an emission reciever
-                based on the emission schedule
-        @param id Receiver ID. The caller must be the receiver mapped to this ID.
-        @return uint256 Additional `babelToken` allowance for the receiver. The receiver
-                        accesses the tokens using `Vault.transferAllocatedTokens`
+     * @notice Allocate additional `babelToken` allowance to an emission reciever
+     *             based on the emission schedule
+     *     @param id Receiver ID. The caller must be the receiver mapped to this ID.
+     *     @return uint256 Additional `babelToken` allowance for the receiver. The receiver
+     *                     accesses the tokens using `Vault.transferAllocatedTokens`
      */
     function allocateNewEmissions(uint256 id) external returns (uint256) {
         Receiver memory receiver = idToReceiver[id];
@@ -294,13 +304,13 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Transfer `babelToken` tokens previously allocated to the caller
-        @dev Callable only by registered receiver contracts which were previously
-             allocated tokens using `allocateNewEmissions`.
-        @param claimant Address that is claiming the tokens
-        @param receiver Address to transfer tokens to
-        @param amount Desired amount of tokens to transfer. This value always assumes max boost.
-        @return bool success
+     * @notice Transfer `babelToken` tokens previously allocated to the caller
+     *     @dev Callable only by registered receiver contracts which were previously
+     *          allocated tokens using `allocateNewEmissions`.
+     *     @param claimant Address that is claiming the tokens
+     *     @param receiver Address to transfer tokens to
+     *     @param amount Desired amount of tokens to transfer. This value always assumes max boost.
+     *     @return bool success
      */
     function transferAllocatedTokens(address claimant, address receiver, uint256 amount) external returns (bool) {
         if (amount > 0) {
@@ -311,15 +321,15 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Claim earned tokens from multiple reward contracts, optionally with delegated boost
-        @param receiver Address to transfer tokens to. Any earned 3rd-party rewards
-                        are also sent to this address.
-        @param boostDelegate Address to delegate boost from during this claim. Set as
-                             `address(0)` to use the boost of the claimer.
-        @param rewardContracts Array of addresses of registered receiver contracts where
-                               the caller has pending rewards to claim.
-        @param maxFeePct Maximum fee percent to pay to delegate, as a whole number out of 10000
-        @return bool success
+     * @notice Claim earned tokens from multiple reward contracts, optionally with delegated boost
+     *     @param receiver Address to transfer tokens to. Any earned 3rd-party rewards
+     *                     are also sent to this address.
+     *     @param boostDelegate Address to delegate boost from during this claim. Set as
+     *                          `address(0)` to use the boost of the claimer.
+     *     @param rewardContracts Array of addresses of registered receiver contracts where
+     *                            the caller has pending rewards to claim.
+     *     @param maxFeePct Maximum fee percent to pay to delegate, as a whole number out of 10000
+     *     @return bool success
      */
     function batchClaimRewards(
         address receiver,
@@ -341,9 +351,9 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Claim tokens earned from boost delegation fees
-        @param receiver Address to transfer the tokens to
-        @return bool Success
+     * @notice Claim tokens earned from boost delegation fees
+     *     @param receiver Address to transfer the tokens to
+     *     @return bool Success
      */
     function claimBoostDelegationFees(address receiver) external returns (bool) {
         uint256 amount = storedPendingReward[msg.sender];
@@ -375,17 +385,15 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
                 if (data.feePct == type(uint16).max) {
                     fee = delegateCallback.getFeePct(account, receiver, amount, previousAmount, totalWeekly);
                     require(fee <= 10000, "Invalid delegate fee");
-                } else fee = data.feePct;
+                } else {
+                    fee = data.feePct;
+                }
                 require(fee <= maxFeePct, "fee exceeds maxFeePct");
             }
 
             // calculate adjusted amount with actual boost applied
-            uint256 adjustedAmount = boostCalculator.getBoostedAmountWrite(
-                claimant,
-                amount,
-                previousAmount,
-                totalWeekly
-            );
+            uint256 adjustedAmount =
+                boostCalculator.getBoostedAmountWrite(claimant, amount, previousAmount, totalWeekly);
             {
                 // remaining tokens from unboosted claims are added to the unallocated total
                 // context avoids stack-too-deep
@@ -416,13 +424,7 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
             if (address(delegateCallback) != address(0)) {
                 require(
                     delegateCallback.delegatedBoostCallback(
-                        account,
-                        receiver,
-                        amount,
-                        adjustedAmount,
-                        fee,
-                        previousAmount,
-                        totalWeekly
+                        account, receiver, amount, adjustedAmount, fee, previousAmount, totalWeekly
                     ),
                     "Delegate callback rejected"
                 );
@@ -444,16 +446,15 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Claimable BABEL amount for `account` in `rewardContract` after applying boost
-        @dev Returns (0, 0) if the boost delegate is invalid, or the delgate's callback fee
-             function is incorrectly configured.
-        @param account Address claiming rewards
-        @param boostDelegate Address to delegate boost from when claiming. Set as
-                             `address(0)` to use the boost of the claimer.
-        @param rewardContract Address of the contract where rewards are being claimed
-        @return adjustedAmount Amount received after boost, prior to paying delegate fee
-        @return feeToDelegate Fee amount paid to `boostDelegate`
-
+     * @notice Claimable BABEL amount for `account` in `rewardContract` after applying boost
+     *     @dev Returns (0, 0) if the boost delegate is invalid, or the delgate's callback fee
+     *          function is incorrectly configured.
+     *     @param account Address claiming rewards
+     *     @param boostDelegate Address to delegate boost from when claiming. Set as
+     *                          `address(0)` to use the boost of the claimer.
+     *     @param rewardContract Address of the contract where rewards are being claimed
+     *     @return adjustedAmount Amount received after boost, prior to paying delegate fee
+     *     @return feeToDelegate Fee amount paid to `boostDelegate`
      */
     function claimableRewardAfterBoost(
         address account,
@@ -491,13 +492,13 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Enable or disable boost delegation, and set boost delegation parameters
-        @param isEnabled is boost delegation enabled?
-        @param feePct Fee % charged when claims are made that delegate to the caller's boost.
-                      Given as a whole number out of 10000. If set to type(uint16).max, the fee
-                      is set by calling `IBoostDelegate(callback).getFeePct` prior to each claim.
-        @param callback Optional contract address to receive a callback each time a claim is
-                        made which delegates to the caller's boost.
+     * @notice Enable or disable boost delegation, and set boost delegation parameters
+     *     @param isEnabled is boost delegation enabled?
+     *     @param feePct Fee % charged when claims are made that delegate to the caller's boost.
+     *                   Given as a whole number out of 10000. If set to type(uint16).max, the fee
+     *                   is set by calling `IBoostDelegate(callback).getFeePct` prior to each claim.
+     *     @param callback Optional contract address to receive a callback each time a claim is
+     *                     made which delegates to the caller's boost.
      */
     function setBoostDelegationParams(bool isEnabled, uint256 feePct, address callback) external returns (bool) {
         if (isEnabled) {
@@ -505,11 +506,8 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
             if (callback != address(0) || feePct == type(uint16).max) {
                 require(callback.isContract(), "Callback must be a contract");
             }
-            boostDelegation[msg.sender] = Delegation({
-                isEnabled: true,
-                feePct: uint16(feePct),
-                callback: IBoostDelegate(callback)
-            });
+            boostDelegation[msg.sender] =
+                Delegation({isEnabled: true, feePct: uint16(feePct), callback: IBoostDelegate(callback)});
         } else {
             delete boostDelegation[msg.sender];
         }
@@ -519,10 +517,10 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get the remaining claimable amounts this week that will receive boost
-        @param claimant address to query boost amounts for
-        @return maxBoosted remaining claimable amount that will receive max boost
-        @return boosted remaining claimable amount that will receive some amount of boost (including max boost)
+     * @notice Get the remaining claimable amounts this week that will receive boost
+     *     @param claimant address to query boost amounts for
+     *     @return maxBoosted remaining claimable amount that will receive max boost
+     *     @return boosted remaining claimable amount that will receive some amount of boost (including max boost)
      */
     function getClaimableWithBoost(address claimant) external view returns (uint256 maxBoosted, uint256 boosted) {
         uint256 week = getWeek();
@@ -532,7 +530,7 @@ contract BabelVault is IBabelVault, BabelOwnable, SystemStart {
     }
 
     /**
-        @notice Get the claimable amount that `claimant` has earned boost delegation fees
+     * @notice Get the claimable amount that `claimant` has earned boost delegation fees
      */
     function claimableBoostDelegationFees(address claimant) external view returns (uint256 amount) {
         amount = storedPendingReward[claimant];

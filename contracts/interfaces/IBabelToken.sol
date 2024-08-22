@@ -23,7 +23,8 @@ interface IBabelToken {
 
     function increaseAllowance(address spender, uint256 addedValue) external returns (bool);
 
-    function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) external;
+    function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload)
+        external;
 
     function mintToVault(uint256 _totalSupply) external returns (bool);
 
@@ -34,15 +35,8 @@ interface IBabelToken {
         bytes calldata _payload
     ) external;
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+    function permit(address owner, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
 
     function renounceOwnership() external;
 
@@ -72,12 +66,9 @@ interface IBabelToken {
 
     function transferToLocker(address sender, uint256 amount) external returns (bool);
 
-    function retryMessage(
-        uint16 _srcChainId,
-        bytes calldata _srcAddress,
-        uint64 _nonce,
-        bytes calldata _payload
-    ) external payable;
+    function retryMessage(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload)
+        external
+        payable;
 
     function sendFrom(
         address _from,
@@ -115,12 +106,10 @@ interface IBabelToken {
 
     function failedMessages(uint16, bytes calldata, uint64) external view returns (bytes32);
 
-    function getConfig(
-        uint16 _version,
-        uint16 _chainId,
-        address,
-        uint256 _configType
-    ) external view returns (bytes memory);
+    function getConfig(uint16 _version, uint16 _chainId, address, uint256 _configType)
+        external
+        view
+        returns (bytes memory);
 
     function getTrustedRemoteAddress(uint16 _remoteChainId) external view returns (bytes memory);
 

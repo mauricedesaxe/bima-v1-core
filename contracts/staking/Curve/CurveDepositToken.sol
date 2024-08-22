@@ -8,11 +8,11 @@ import {ILiquidityGauge} from "../../interfaces/ILiquidityGauge.sol";
 import {BabelOwnable} from "../../dependencies/BabelOwnable.sol";
 
 /**
-    @title Babel Curve Deposit Wrapper
-    @notice Standard ERC20 interface around a deposit of a Curve LP token into it's
-            associated gauge. Tokens are minted by depositing Curve LP tokens, and
-            burned to receive the LP tokens back. Holders may claim BABEL emissions
-            on top of the earned CRV.
+ * @title Babel Curve Deposit Wrapper
+ *     @notice Standard ERC20 interface around a deposit of a Curve LP token into it's
+ *             associated gauge. Tokens are minted by depositing Curve LP tokens, and
+ *             burned to receive the LP tokens back. Holders may claim BABEL emissions
+ *             on top of the earned CRV.
  */
 contract CurveDepositToken {
     IERC20 public immutable BABEL;
@@ -73,7 +73,7 @@ contract CurveDepositToken {
     }
 
     function notifyRegisteredId(uint256[] memory assignedIds) external returns (bool) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "CurveDepositToken: Caller not Vault");
         require(emissionId == 0, "Already registered");
         require(assignedIds.length == 1, "Incorrect ID count");
         emissionId = assignedIds[0];
@@ -134,7 +134,7 @@ contract CurveDepositToken {
     }
 
     function vaultClaimReward(address claimant, address receiver) external returns (uint256) {
-        require(msg.sender == address(vault));
+        require(msg.sender == address(vault), "CurveDepositToken: Caller not Vault");
         uint128[2] memory amounts = _claimReward(claimant, receiver);
 
         emit RewardClaimed(receiver, 0, amounts[1]);

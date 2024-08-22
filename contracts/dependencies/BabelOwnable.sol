@@ -5,9 +5,9 @@ import {IBabelCore} from "../interfaces/IBabelCore.sol";
 import {IBabelOwnable} from "../interfaces/IEmissionSchedule.sol";
 
 /**
-    @title Babel Ownable
-    @notice Contracts inheriting `BabelOwnable` have the same owner as `BabelCore`.
-            The ownership cannot be independently modified or renounced.
+ * @title Babel Ownable
+ *     @notice Contracts inheriting `BabelOwnable` have the same owner as `BabelCore`.
+ *             The ownership cannot be independently modified or renounced.
  */
 contract BabelOwnable is IBabelOwnable {
     IBabelCore public immutable BABEL_CORE;
