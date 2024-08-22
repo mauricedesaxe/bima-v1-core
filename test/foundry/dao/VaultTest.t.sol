@@ -214,4 +214,48 @@ contract VaultTest is TestSetup {
         vm.expectRevert();
         babelVault.registerReceiver(address(1), 1);
     }
+
+    function testFuzz_allocateNewEmissions(address receiver, uint256 count, uint256 weeksToAdd) public {
+        vm.assume(receiver != address(0) && receiver != address(babelVault));
+        vm.assume(uint160(receiver) > 9); // Exclude precompile addresses (0x1 to 0x9)
+        count = bound(count, 1, 100); // Limit count to avoid excessive gas usage or memory issues
+        weeksToAdd = bound(weeksToAdd, 0, type(uint64).max - 1);
+        vm.assume(weeksToAdd <= type(uint64).max - 1);
+
+        // Set up week
+        vm.warp(block.timestamp + weeksToAdd * 1 weeks);
+
+        // Mock the IEmissionReceiver interface
+        MockEmissionReceiver mockReceiver = new MockEmissionReceiver();
+        vm.etch(receiver, address(mockReceiver).code);
+
+        // Have owner register receiver
+        vm.prank(users.owner);
+        bool success = babelVault.registerReceiver(receiver, count);
+        assertTrue(success);
+
+        // Simulate time passing some more
+        vm.warp(block.timestamp + weeksToAdd * 1 weeks);
+
+        uint256 initialUnallocated = babelVault.unallocatedTotal();
+
+        // Call allocateNewEmissions
+        uint256 id = 1;
+        vm.prank(receiver);
+        uint256 allocated = babelVault.allocateNewEmissions(id);
+
+        // Calculate expected unallocated total
+        uint256 expectedUnallocated = initialUnallocated;
+        (address _account, bool isActive) = babelVault.idToReceiver(id);
+        if (!isActive) {
+            // If receiver is inactive, unallocated total should remain the same as after _allocateTotalWeekly
+            expectedUnallocated = babelVault.unallocatedTotal();
+        }
+
+        // Assertions
+        assertEq(babelVault.unallocatedTotal(), expectedUnallocated, "Unallocated total not updated correctly");
+        assertEq(allocated, 0, "Incorrect amount allocated");
+        assertEq(babelVault.allocated(receiver), 0, "Allocated amount should be 0 for inactive receiver");
+        assertEq(babelVault.receiverUpdatedWeek(id), babelVault.getWeek(), "Receiver week not updated correctly");
+    }
 }
